@@ -471,18 +471,29 @@ Please provide the edited blog content with the requested changes. Maintain the 
 
 **Setup Steps**:
 1. **Gemini API**: Get API key from Google AI Studio
-2. **Environment Variables**: Add GEMINI_API_KEY to .env.local
-3. **API Route**: Create `/api/generate-blog` endpoint using ContentGenerationAgent
-4. **Prompt Engineering**: Test and refine prompts for different tones
-5. **Error Handling**: Implement retry logic and fallback responses
+2. **LangSmith**: Sign up at https://smith.langchain.com/ and get API key
+3. **Environment Variables**: Add API keys to .env.local
+4. **API Route**: Create `/api/generate-blog` endpoint using ContentGenerationAgent
+5. **Prompt Engineering**: Test and refine prompts for different tones
+6. **Error Handling**: Implement retry logic and fallback responses
+
+**Environment Variables**:
+```bash
+# Add to .env.local
+LANGSMITH_TRACING="true"
+LANGSMITH_ENDPOINT="https://api.smith.langchain.com"
+LANGSMITH_API_KEY="your_langsmith_api_key"
+LANGSMITH_PROJECT="your_project_name"
+GEMINI_API_KEY="your_gemini_api_key"
+```
 
 #### 1.4 Reference Management Agent
 **Purpose**: Provide structured reference list with links
 
-**✅ Developer Choice**: Option A - Manual extraction from research data
-- **Implementation**: Extract references directly from research data
-- **Pros**: Simple, reliable
-- **Cons**: Limited to what was found
+**✅ Developer Choice**: Option A - Simplified extraction from research data
+- **Implementation**: Use research data directly without additional processing
+- **Pros**: Simple, reliable, fast, no complex filtering needed
+- **Cons**: Limited to what was found, no customization
 
 **Implementation Instructions**:
 ```typescript
@@ -504,73 +515,23 @@ interface ReferenceList {
 
 export class ReferenceManagementAgent {
   async extractReferences(researchData: any[], blogContent: string): Promise<ReferenceList> {
-    // Step 1: Filter relevant research data
-    const relevantReferences = this.filterRelevantReferences(researchData, blogContent);
-    
-    // Step 2: Format references consistently
-    const formattedReferences = this.formatReferences(relevantReferences);
-    
-    // Step 3: Sort by relevance
-    const sortedReferences = this.sortByRelevance(formattedReferences);
-    
-    // Step 4: Limit to top references
-    const topReferences = sortedReferences.slice(0, 8);
+    // Simply use the research data as-is, no additional filtering needed
+    const references = this.formatReferences(researchData);
     
     return {
-      references: topReferences,
-      totalCount: topReferences.length,
+      references,
+      totalCount: references.length,
       generatedAt: new Date().toISOString()
     };
   }
 
-  private filterRelevantReferences(researchData: any[], blogContent: string): any[] {
-    const blogKeywords = this.extractKeywords(blogContent);
-    
-    return researchData.filter(item => {
-      const itemKeywords = this.extractKeywords(item.title + ' ' + item.snippet);
-      const relevanceScore = this.calculateRelevance(blogKeywords, itemKeywords);
-      return relevanceScore > 0.3; // Only include relevant references
-    });
-  }
-
-  private extractKeywords(text: string): string[] {
-    // Simple keyword extraction - could be enhanced with NLP
-    const words = text.toLowerCase()
-      .replace(/[^\w\s]/g, '')
-      .split(/\s+/)
-      .filter(word => word.length > 3)
-      .filter(word => !this.isCommonWord(word));
-    
-    return [...new Set(words)]; // Remove duplicates
-  }
-
-  private isCommonWord(word: string): boolean {
-    const commonWords = ['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'man', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'its', 'let', 'put', 'say', 'she', 'too', 'use'];
-    return commonWords.includes(word);
-  }
-
-  private calculateRelevance(blogKeywords: string[], itemKeywords: string[]): number {
-    const matches = blogKeywords.filter(keyword => 
-      itemKeywords.some(itemKeyword => itemKeyword.includes(keyword) || keyword.includes(itemKeyword))
-    );
-    return matches.length / Math.max(blogKeywords.length, 1);
-  }
-
-  private formatReferences(references: any[]): Reference[] {
-    return references.map(ref => ({
+  private formatReferences(researchData: any[]): Reference[] {
+    return researchData.map(ref => ({
       title: ref.title,
       url: ref.url,
       source: ref.source,
-      publishedAt: ref.publishedAt,
-      relevance: this.calculateRelevance(
-        this.extractKeywords(ref.title + ' ' + ref.snippet),
-        this.extractKeywords(ref.title + ' ' + ref.snippet)
-      )
+      publishedAt: ref.publishedAt
     }));
-  }
-
-  private sortByRelevance(references: Reference[]): Reference[] {
-    return references.sort((a, b) => b.relevance - a.relevance);
   }
 
   generateMarkdownReferences(references: Reference[]): string {
