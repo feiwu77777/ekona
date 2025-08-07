@@ -27,14 +27,14 @@ async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   // Handle CORS preflight
   const corsResponse = handleCors(request);
   if (corsResponse) return corsResponse;
 
   try {
-    const postId = params.id;
+    const { id: postId } = await params;
     const userId = await getAuthenticatedUserId(request);
 
     const images = await blogPostsService.getBlogPostImages(postId, userId);
@@ -62,14 +62,14 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   // Handle CORS preflight
   const corsResponse = handleCors(request);
   if (corsResponse) return corsResponse;
 
   try {
-    const postId = params.id;
+    const { id: postId } = await params;
     const imageData = await request.json();
 
     // Validate required fields
@@ -120,14 +120,14 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   // Handle CORS preflight
   const corsResponse = handleCors(request);
   if (corsResponse) return corsResponse;
 
   try {
-    const postId = params.id;
+    const { id: postId } = await params;
     const { searchParams } = new URL(request.url);
     const imageId = searchParams.get('image_id');
 
