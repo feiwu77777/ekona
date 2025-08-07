@@ -241,7 +241,6 @@ The <abbr title="World Health Organization">WHO</abbr> was founded in 1948.`;
           <BlogPreview 
             content={markdownContent} 
             title={blogTitle}
-            onEdit={() => console.log('Edit clicked')}
           />
         </div>
       </div>
