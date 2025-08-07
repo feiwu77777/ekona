@@ -38,12 +38,13 @@ As AI continues to advance, it will create new opportunities while also presenti
     contentSnapshot: string;
   }>>([]);
 
-  const handleEditRequest = async (request: string): Promise<string> => {
+  const handleEditRequest = async (request: string): Promise<{ content: string; title: string }> => {
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // For demo purposes, we'll simulate different types of edits
     let updatedContent = blogContent;
+    let updatedTitle = 'The Future of Artificial Intelligence';
     
     if (request.toLowerCase().includes('more engaging')) {
       updatedContent = blogContent.replace(
@@ -60,15 +61,16 @@ As AI continues to advance, it will create new opportunities while also presenti
         'Artificial Intelligence (AI) has rapidly evolved from a theoretical concept to a transformative technology',
         'AI has quickly moved from just an idea to a game-changing technology'
       );
+      updatedTitle = 'AI: What\'s Coming Next?';
     } else {
       // Generic edit - just add a note about the edit
       updatedContent = blogContent + '\n\n*[Edit applied: ' + request + ']*';
     }
     
-    return updatedContent;
+    return { content: updatedContent, title: updatedTitle };
   };
 
-  const handleContentUpdate = (newContent: string) => {
+  const handleContentUpdate = (newContent: string, newTitle?: string) => {
     // Add to edit history
     const historyEntry = {
       id: Date.now().toString(),

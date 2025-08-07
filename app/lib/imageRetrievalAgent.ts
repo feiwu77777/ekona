@@ -12,7 +12,6 @@ const NUM_IMAGES = 3; // Reduced for testing to avoid Unsplash rate limits
 
 export class ImageRetrievalAgent {
   private unsplashAccessKey: string;
-  private geminiLLM: any; // Will be initialized when Gemini is set up
 
   constructor() {
     this.unsplashAccessKey = process.env.UNSPLASH_ACCESS_KEY!;
@@ -25,18 +24,15 @@ export class ImageRetrievalAgent {
       : await this.extractKeyConcepts(blogContent);
     console.log("Key concepts:", keyConcepts);
     // Step 2: Generate search queries
-    const searchQueries = this.generateSearchQueries(keyConcepts);
+    const searchQueries = keyConcepts.slice(0, 3);
     console.log("Search queries:", searchQueries);
     // Step 3: Search for images
     const allImages = await this.searchImages(searchQueries);
-    console.log("All images:", allImages);
     // Step 4: Score relevance using AI (or fallback to keyword matching)
     const scoredImages = await this.scoreImageRelevance(allImages, topic);
     console.log("Scored images:", scoredImages);
-    // Step 5: Select top images (always return top 3, regardless of score)
-    return scoredImages
-      .sort((a, b) => b.relevanceScore! - a.relevanceScore!)
-      .slice(0, 4); // 4 sections
+    // Step 5: Return all scored images (no slicing) for maximum choice
+    return scoredImages.sort((a, b) => b.relevanceScore! - a.relevanceScore!);
   }
 
   private async extractKeyConcepts(content: string): Promise<string[]> {
@@ -151,10 +147,12 @@ export class ImageRetrievalAgent {
 
   async embedImagesInMarkdown(markdown: string, images: ImageData[]): Promise<string> {
     const sections = markdown.split('\n## ');
+    const numSections = sections.length - 1;
     const embeddedSections = sections.map((section, index) => {
       if (index === 0) return section; // Skip title section
       
-      const relevantImage = this.findRelevantImageForSection(section, images, index - 1); // -1 because we skip title section
+      // Find relevant image for this section
+      const relevantImage = this.findRelevantImageForSection(section, images.slice(0, numSections), index - 1);
       
       if (relevantImage) {
         // Proper Unsplash attribution as required by API Terms
@@ -188,8 +186,11 @@ export class ImageRetrievalAgent {
   }
 
   private findRelevantImageForSection(section: string, images: ImageData[], sectionIndex: number): ImageData | null {
-    // Simple assignment: one image per section in order
-    return images[sectionIndex] || null;
+    if (images.length === 0) return null;
+    
+    // Cycle through available images if we have more sections than images
+    const imageIndex = sectionIndex % images.length;
+    return images[imageIndex];
   }
 
   // Method to get image search summary for debugging
@@ -207,8 +208,7 @@ export class ImageRetrievalAgent {
     const scoredImages = await this.scoreImageRelevance(allImages, topic);
     const finalImages = scoredImages
       .filter(img => img.relevanceScore! >= 7)
-      .sort((a, b) => b.relevanceScore! - a.relevanceScore!)
-      .slice(0, 3);
+      .sort((a, b) => b.relevanceScore! - a.relevanceScore!);
 
     return {
       topic,

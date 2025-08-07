@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerSupabase } from '@/app/lib/supabaseClient';
 import { blogPostsService } from '@/app/lib/blogPostsService';
 import { addCorsHeaders, handleCors } from '@/app/lib/cors';
 
@@ -8,10 +9,31 @@ export async function GET(request: NextRequest) {
   if (corsResponse) return corsResponse;
 
   try {
-    // For now, use a placeholder user ID
-    // In a real implementation, you'd get this from authentication
-    const userId = 'user-placeholder';
+    // Get user ID from Authorization header
+    const authHeader = request.headers.get('authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
 
+    const accessToken = authHeader.substring(7);
+    
+    // Verify auth with service role client
+    const supabase = createServerSupabase();
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    
+    if (authError || !user) {
+      console.error('Auth error:', authError);
+      return NextResponse.json(
+        { error: 'Invalid authentication token' },
+        { status: 401 }
+      );
+    }
+
+    const userId = user.id;
     const stats = await blogPostsService.getBlogPostStats(userId);
 
     if (!stats) {
@@ -28,6 +50,15 @@ export async function GET(request: NextRequest) {
     return addCorsHeaders(response, request);
   } catch (error) {
     console.error('Error fetching blog post stats:', error);
+    
+    if (error instanceof Error && (error.message === 'Authentication required' || error.message === 'Invalid authentication token')) {
+      const errorResponse = NextResponse.json(
+        { error: error.message },
+        { status: 401 }
+      );
+      return addCorsHeaders(errorResponse, request);
+    }
+    
     const errorResponse = NextResponse.json(
       { error: 'Failed to fetch blog post statistics' },
       { status: 500 }

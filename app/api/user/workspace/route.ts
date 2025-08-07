@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerSupabase } from '@/app/lib/supabaseClient';
 import { userSessionService } from '@/app/lib/userSessionService';
 import { addCorsHeaders, handleCors } from '@/app/lib/cors';
 
@@ -23,10 +24,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For now, use a placeholder user ID
-    // In a real implementation, you'd get this from authentication
-    const userId = 'user-placeholder';
+    // Get user ID from Authorization header
+    const authHeader = request.headers.get('authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
 
+    const accessToken = authHeader.substring(7);
+    
+    // Verify auth with service role client
+    const supabase = createServerSupabase();
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    
+    if (authError || !user) {
+      console.error('Auth error:', authError);
+      return NextResponse.json(
+        { error: 'Invalid authentication token' },
+        { status: 401 }
+      );
+    }
+
+    const userId = user.id;
     const workspaceIdResult = await userSessionService.saveWorkspaceState(
       userId,
       workspaceId,
@@ -43,6 +65,15 @@ export async function POST(request: NextRequest) {
     return addCorsHeaders(response, request);
   } catch (error) {
     console.error('Error saving workspace state:', error);
+    
+    if (error instanceof Error && (error.message === 'Authentication required' || error.message === 'Invalid authentication token')) {
+      const errorResponse = NextResponse.json(
+        { error: error.message },
+        { status: 401 }
+      );
+      return addCorsHeaders(errorResponse, request);
+    }
+    
     const errorResponse = NextResponse.json(
       { error: 'Failed to save workspace state' },
       { status: 500 }
@@ -60,10 +91,31 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const workspaceId = searchParams.get('workspaceId');
 
-    // For now, use a placeholder user ID
-    // In a real implementation, you'd get this from authentication
-    const userId = 'user-placeholder';
+    // Get user ID from Authorization header
+    const authHeader = request.headers.get('authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
 
+    const accessToken = authHeader.substring(7);
+    
+    // Verify auth with service role client
+    const supabase = createServerSupabase();
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    
+    if (authError || !user) {
+      console.error('Auth error:', authError);
+      return NextResponse.json(
+        { error: 'Invalid authentication token' },
+        { status: 401 }
+      );
+    }
+
+    const userId = user.id;
     if (workspaceId) {
       // Get specific workspace
       const workspace = await userSessionService.getWorkspaceState(userId, workspaceId);
@@ -86,6 +138,15 @@ export async function GET(request: NextRequest) {
     }
   } catch (error) {
     console.error('Error fetching workspace state:', error);
+    
+    if (error instanceof Error && (error.message === 'Authentication required' || error.message === 'Invalid authentication token')) {
+      const errorResponse = NextResponse.json(
+        { error: error.message },
+        { status: 401 }
+      );
+      return addCorsHeaders(errorResponse, request);
+    }
+    
     const errorResponse = NextResponse.json(
       { error: 'Failed to fetch workspace state' },
       { status: 500 }
@@ -110,10 +171,31 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // For now, use a placeholder user ID
-    // In a real implementation, you'd get this from authentication
-    const userId = 'user-placeholder';
+    // Get user ID from Authorization header
+    const authHeader = request.headers.get('authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
 
+    const accessToken = authHeader.substring(7);
+    
+    // Verify auth with service role client
+    const supabase = createServerSupabase();
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    
+    if (authError || !user) {
+      console.error('Auth error:', authError);
+      return NextResponse.json(
+        { error: 'Invalid authentication token' },
+        { status: 401 }
+      );
+    }
+
+    const userId = user.id;
     await userSessionService.deleteWorkspaceState(userId, workspaceId);
 
     const response = NextResponse.json({ 
@@ -122,6 +204,15 @@ export async function DELETE(request: NextRequest) {
     return addCorsHeaders(response, request);
   } catch (error) {
     console.error('Error deleting workspace state:', error);
+    
+    if (error instanceof Error && (error.message === 'Authentication required' || error.message === 'Invalid authentication token')) {
+      const errorResponse = NextResponse.json(
+        { error: error.message },
+        { status: 401 }
+      );
+      return addCorsHeaders(errorResponse, request);
+    }
+    
     const errorResponse = NextResponse.json(
       { error: 'Failed to delete workspace state' },
       { status: 500 }

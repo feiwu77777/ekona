@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+import { createServerSupabase } from './supabaseClient';
 import { Database, UserPreferences, UserSessionHistory, UserActivityLog, UserWorkspaceState } from '@/supabase_SQL/database.types';
 
-const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = createServerSupabase();
 
 export class UserSessionService {
   /**

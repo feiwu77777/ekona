@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerSupabase } from '@/app/lib/supabaseClient';
 import { userSessionService } from '@/app/lib/userSessionService';
 import { addCorsHeaders, handleCors } from '@/app/lib/cors';
 
@@ -8,13 +9,35 @@ export async function GET(request: NextRequest) {
   if (corsResponse) return corsResponse;
 
   try {
+    // Get user ID from Authorization header
+    const authHeader = request.headers.get('authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const accessToken = authHeader.substring(7);
+    
+    // Verify auth with service role client
+    const supabase = createServerSupabase();
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    
+    if (authError || !user) {
+      console.error('Auth error:', authError);
+      return NextResponse.json(
+        { error: 'Invalid authentication token' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'session'; // session, activity, recent
     const days = parseInt(searchParams.get('days') || '7');
 
-    // For now, use a placeholder user ID
-    // In a real implementation, you'd get this from authentication
-    const userId = 'user-placeholder';
+    const userId = user.id;
 
     let stats;
 

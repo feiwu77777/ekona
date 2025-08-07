@@ -1,6 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerSupabase } from '@/app/lib/supabaseClient';
 import { blogPostsService } from '@/app/lib/blogPostsService';
 import { addCorsHeaders, handleCors } from '@/app/lib/cors';
+
+// Helper function to get authenticated user ID
+async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
+  const authHeader = request.headers.get('authorization');
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    throw new Error('Authentication required');
+  }
+
+  const accessToken = authHeader.substring(7);
+  
+  // Verify auth with service role client
+  const supabase = createServerSupabase();
+  const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+  
+  if (authError || !user) {
+    console.error('Auth error:', authError);
+    throw new Error('Invalid authentication token');
+  }
+
+  return user.id;
+}
 
 export async function GET(
   request: NextRequest,
@@ -12,10 +35,7 @@ export async function GET(
 
   try {
     const postId = params.id;
-    
-    // For now, use a placeholder user ID
-    // In a real implementation, you'd get this from authentication
-    const userId = 'user-placeholder';
+    const userId = await getAuthenticatedUserId(request);
 
     const images = await blogPostsService.getBlogPostImages(postId, userId);
 
@@ -23,6 +43,15 @@ export async function GET(
     return addCorsHeaders(response, request);
   } catch (error) {
     console.error('Error fetching blog post images:', error);
+    
+    if (error instanceof Error && (error.message === 'Authentication required' || error.message === 'Invalid authentication token')) {
+      const errorResponse = NextResponse.json(
+        { error: error.message },
+        { status: 401 }
+      );
+      return addCorsHeaders(errorResponse, request);
+    }
+    
     const errorResponse = NextResponse.json(
       { error: 'Failed to fetch blog post images' },
       { status: 500 }
@@ -51,9 +80,7 @@ export async function POST(
       );
     }
 
-    // For now, use a placeholder user ID
-    // In a real implementation, you'd get this from authentication
-    const userId = 'user-placeholder';
+    const userId = await getAuthenticatedUserId(request);
 
     const image = await blogPostsService.addImageToBlogPost(postId, userId, {
       image_id: imageData.image_id,
@@ -74,6 +101,15 @@ export async function POST(
     return addCorsHeaders(response, request);
   } catch (error) {
     console.error('Error adding image to blog post:', error);
+    
+    if (error instanceof Error && (error.message === 'Authentication required' || error.message === 'Invalid authentication token')) {
+      const errorResponse = NextResponse.json(
+        { error: error.message },
+        { status: 401 }
+      );
+      return addCorsHeaders(errorResponse, request);
+    }
+    
     const errorResponse = NextResponse.json(
       { error: 'Failed to add image to blog post' },
       { status: 500 }
@@ -102,9 +138,7 @@ export async function DELETE(
       );
     }
 
-    // For now, use a placeholder user ID
-    // In a real implementation, you'd get this from authentication
-    const userId = 'user-placeholder';
+    const userId = await getAuthenticatedUserId(request);
 
     await blogPostsService.removeImageFromBlogPost(postId, userId, imageId);
 
@@ -112,6 +146,15 @@ export async function DELETE(
     return addCorsHeaders(response, request);
   } catch (error) {
     console.error('Error removing image from blog post:', error);
+    
+    if (error instanceof Error && (error.message === 'Authentication required' || error.message === 'Invalid authentication token')) {
+      const errorResponse = NextResponse.json(
+        { error: error.message },
+        { status: 401 }
+      );
+      return addCorsHeaders(errorResponse, request);
+    }
+    
     const errorResponse = NextResponse.json(
       { error: 'Failed to remove image from blog post' },
       { status: 500 }

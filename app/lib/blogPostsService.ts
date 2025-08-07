@@ -1,10 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+import { createServerSupabase } from './supabaseClient';
 import { Database, BlogPost, BlogPostStats, BlogPostSearchResult, BlogReference, BlogImageMetadata } from '@/supabase_SQL/database.types';
 
-const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = createServerSupabase();
 
 export class BlogPostsService {
   /**
@@ -33,7 +30,55 @@ export class BlogPostsService {
       throw new Error(`Failed to save blog post: ${error.message}`);
     }
 
-    return data as BlogPost;
+    const savedBlogPost = data as BlogPost;
+    // console.log("Saving blog post:", blogPost);
+    // it doesnt contain the reference and images in its metadata
+    // Save references if they exist in metadata
+    if (blogPost.metadata?.references && Array.isArray(blogPost.metadata.references)) {
+      try {
+        for (const reference of blogPost.metadata.references) {
+          await this.addReferenceToBlogPost(savedBlogPost.id, blogPost.user_id, {
+            title: reference.title,
+            url: reference.url,
+            source: reference.source,
+            published_at: reference.publishedAt,
+            relevance_score: reference.relevance || 0,
+            snippet: reference.snippet,
+            domain: reference.domain || new URL(reference.url).hostname
+          });
+        }
+      } catch (refError) {
+        console.warn('Failed to save references:', refError);
+        // Don't fail the entire save operation for reference errors
+      }
+    }
+
+    // Save images if they exist in metadata
+    if (blogPost.metadata?.images && Array.isArray(blogPost.metadata.images)) {
+      try {
+        for (const image of blogPost.metadata.images) {
+          await this.addImageToBlogPost(savedBlogPost.id, blogPost.user_id, {
+            image_id: image.id,
+            url: image.url,
+            alt_text: image.alt || '',
+            photographer: image.photographer || '',
+            photographer_url: image.photographerUrl || '',
+            download_url: image.downloadUrl || image.url,
+            relevance_score: image.relevanceScore || 0,
+            section_index: image.sectionIndex || 0,
+            image_type: image.imageType || 'unsplash',
+            width: image.width || 0,
+            height: image.height || 0,
+            file_size: image.fileSize || 0
+          });
+        }
+      } catch (imgError) {
+        console.warn('Failed to save images:', imgError);
+        // Don't fail the entire save operation for image errors
+      }
+    }
+
+    return savedBlogPost;
   }
 
   /**

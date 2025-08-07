@@ -78,15 +78,16 @@ export async function POST(request: NextRequest) {
 
     // Generate edited content
     const startTime = Date.now();
-    const updatedContent = await contentAgent.editBlog(originalContent, editRequest);
+    const editResult = await contentAgent.editBlog(originalContent, editRequest);
     const editTime = Date.now() - startTime;
 
     return NextResponse.json({
-      content: updatedContent,
+      content: editResult.content,
+      title: editResult.title,
       metadata: {
         editTime,
         originalWordCount: originalContent.split(/\s+/).length,
-        newWordCount: updatedContent.split(/\s+/).length
+        newWordCount: editResult.content.split(/\s+/).length
       }
     });
 

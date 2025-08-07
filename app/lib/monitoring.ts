@@ -88,9 +88,16 @@ export const llmMonitoring = new LLMMonitoring();
 
 // Cost calculation utilities
 export const calculateCost = (inputTokens: number, outputTokens: number): number => {
-  // Gemini 2.5 Pro pricing (approximate)
-  const inputCostPer1K = 0.0025; // $0.0025 per 1K input tokens
-  const outputCostPer1K = 0.01; // $0.01 per 1K output tokens
+  // // Gemini 2.5 Pro pricing (approximate)
+  // const inputCostPer1K = 0.0025; // $0.0025 per 1K input tokens
+  // const outputCostPer1K = 0.01; // $0.01 per 1K output tokens
+  
+  // const inputCost = (inputTokens / 1000) * inputCostPer1K;
+  // const outputCost = (outputTokens / 1000) * outputCostPer1K;
+  
+  // Gemini 2.0 Flash Lite pricing (approximate)
+  const inputCostPer1K = 0.001; // $0.001 per 1K input tokens
+  const outputCostPer1K = 0.004; // $0.004 per 1K output tokens
   
   const inputCost = (inputTokens / 1000) * inputCostPer1K;
   const outputCost = (outputTokens / 1000) * outputCostPer1K;

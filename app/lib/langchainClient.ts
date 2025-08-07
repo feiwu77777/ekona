@@ -9,10 +9,10 @@ const client = new Client({
 
 // Create a traceable Gemini wrapper
 const geminiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-
 // Wrap Gemini calls with LangSmith tracing
 export const traceableGemini = traceable(async (prompt: string) => {
-  const model = geminiClient.getGenerativeModel({ model: "gemini-2.5-pro" });
+  const model_name = 'gemini-2.0-flash-lite' // 'gemini-2.5-pro'
+  const model = geminiClient.getGenerativeModel({ model: model_name });
   const result = await model.generateContent(prompt);
   return result.response.text();
 });

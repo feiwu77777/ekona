@@ -92,11 +92,35 @@ Write the blog post now:
     // Remove title from content
     const contentWithoutTitle = content.replace(/^# .+$/m, '').trim();
     
-    // Extract keywords
-    const keywordsMatch = content.match(/\*\*Keywords:\*\* \[(.+)\]/);
-    const keywords = keywordsMatch 
-      ? keywordsMatch[1].split(',').map(k => k.trim())
-      : this.extractKeywordsFromContent(contentWithoutTitle);
+    // Extract keywords - handle multiple possible formats
+    let keywords: string[] = [];
+    
+    // Try different patterns for keyword extraction
+    const patterns = [
+      /\*\*Keywords:\*\* \[(.+)\]/m,  // **Keywords:** [keyword1, keyword2, keyword3, keyword4, keyword5]
+      /Keywords: \[(.+)\]/m,          // Keywords: [keyword1, keyword2, keyword3, keyword4, keyword5]
+      /Keywords: (.+)/m,              // Keywords: keyword1, keyword2, keyword3, keyword4, keyword5
+      /\*\*Keywords:\*\* (.+)/m       // **Keywords:** keyword1, keyword2, keyword3, keyword4, keyword5
+    ];
+    
+    for (const pattern of patterns) {
+      const keywordsMatch = content.match(pattern);
+      if (keywordsMatch) {
+        // Clean up the keywords - remove brackets if present and split by comma
+        let keywordString = keywordsMatch[1].trim();
+        if (keywordString.startsWith('[') && keywordString.endsWith(']')) {
+          keywordString = keywordString.slice(1, -1);
+        }
+        keywords = keywordString.split(',').map(k => k.trim()).filter(k => k.length > 0);
+        break;
+      }
+    }
+    
+    // Fallback to content extraction if no keywords found
+    if (keywords.length === 0) {
+      keywords = this.extractKeywordsFromContent(contentWithoutTitle);
+      console.log("Fallback Keywords:", keywords);
+    }
     
     // Split into sections
     const sections = contentWithoutTitle.split(/\n## /).map(section => section.trim());
@@ -137,16 +161,36 @@ Write the blog post now:
       .map(([word]) => word);
   }
 
-  async editBlog(originalContent: string, editRequest: string): Promise<string> {
+  async editBlog(originalContent: string, editRequest: string): Promise<{ title: string; content: string }> {
     const prompt = `
 Original blog content:
 ${originalContent}
 
 Edit request: ${editRequest}
 
-Please provide the edited blog content with the requested changes. Maintain the same structure and tone.
+**CRITICAL INSTRUCTIONS:**
+- Return ONLY the edited blog content - no meta-commentary, explanations, or notes about your writing process
+- Do not include phrases like "Here's the edited version", "I've made changes", "Let me know if you'd like adjustments", etc.
+- Do not explain what you did or how you edited it
+- Start directly with the blog title and content
+- Maintain the same structure and tone as the original
+- Include the title with # markdown format
+
+Please provide the edited blog content with the requested changes:
 `;
 
-    return await traceableGemini(prompt);
+    const editedContent = await traceableGemini(prompt);
+    
+    // Parse the edited content to extract title and content
+    const titleMatch = editedContent.match(/^# (.+)$/m);
+    const title = titleMatch ? titleMatch[1] : 'Edited Blog Post';
+    
+    // Remove title from content
+    const contentWithoutTitle = editedContent.replace(/^# .+$/m, '').trim();
+    
+    return {
+      title,
+      content: contentWithoutTitle
+    };
   }
 }

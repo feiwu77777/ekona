@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerSupabase } from '@/app/lib/supabaseClient';
 import { AgentOrchestrator } from '@/app/lib/agentOrchestrator';
 import { blogPostsService } from '@/app/lib/blogPostsService';
 import { blogGenerationRateLimit } from '@/app/lib/rateLimit';
@@ -43,10 +44,21 @@ export async function POST(request: NextRequest) {
     let userId: string | null = null;
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      // For now, we'll extract user ID from token or use a placeholder
-      // In a real implementation, you'd verify the token with Supabase
-      userId = 'user-placeholder'; // This should be replaced with actual user ID extraction
+      const accessToken = authHeader.substring(7);
+      
+      // Verify auth with service role client
+      const supabase = createServerSupabase();
+      const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+      
+      if (authError || !user) {
+        console.error('Auth error:', authError);
+        return NextResponse.json(
+          { error: 'Invalid authentication token' },
+          { status: 401 }
+        );
+      }
+      
+      userId = user.id;
     }
 
     // Rate limiting
@@ -80,24 +92,11 @@ export async function POST(request: NextRequest) {
       includeImages: includeImages ?? true
     });
 
-    // Prepare response data
-    const responseData = {
-      title: result.title,
-      content: result.content,
-      images: result.images,
-      references: result.references,
-      metadata: {
-        ...result.metadata,
-        researchSources: result.metadata.researchSources,
-        imagesFound: result.metadata.imagesFound,
-        referencesCount: result.metadata.referencesCount
-      }
-    };
-
     // Save to database if user is authenticated
-    if (userId && userId !== 'user-placeholder') {
+    let savedBlogPost = null;
+    if (userId) {
       try {
-        await blogPostsService.saveBlogPost({
+        savedBlogPost = await blogPostsService.saveBlogPost({
           user_id: userId,
           title: result.title,
           content: result.content,
@@ -106,7 +105,12 @@ export async function POST(request: NextRequest) {
           word_count: result.metadata.wordCount,
           generation_time: result.metadata.generationTime,
           model_used: result.metadata.modelUsed,
-          metadata: responseData.metadata,
+          metadata: {
+            ...result.metadata,
+            researchSources: result.metadata.researchSources,
+            imagesFound: result.metadata.imagesFound,
+            referencesCount: result.metadata.referencesCount
+          },
           keywords: [] // Keywords will be extracted from content later if needed
         });
       } catch (saveError) {
@@ -114,6 +118,22 @@ export async function POST(request: NextRequest) {
         // Don't fail the request if saving fails
       }
     }
+
+    // Prepare response data
+    const responseData = {
+      title: result.title,
+      content: result.content,
+      images: result.images,
+      allImages: result.allImages,
+      references: result.references,
+      metadata: {
+        ...result.metadata,
+        researchSources: result.metadata.researchSources,
+        imagesFound: result.metadata.imagesFound,
+        referencesCount: result.metadata.referencesCount,
+        blogPostId: savedBlogPost?.id || null
+      }
+    };
 
     const response = NextResponse.json(responseData);
     return addCorsHeaders(response, request);

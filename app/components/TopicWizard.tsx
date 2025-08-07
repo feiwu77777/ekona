@@ -33,6 +33,7 @@ export default function TopicWizard({ onTopicSubmit, isLoading }: TopicWizardPro
   const [step, setStep] = useState(1);
   const [topic, setTopic] = useState('');
   const [category, setCategory] = useState('');
+  const [customCategory, setCustomCategory] = useState('');
   const [tone, setTone] = useState('');
 
   const handleNext = () => {
@@ -45,7 +46,8 @@ export default function TopicWizard({ onTopicSubmit, isLoading }: TopicWizardPro
 
   const handleSubmit = () => {
     if (topic && category && tone) {
-      onTopicSubmit(topic, category, tone);
+      const finalCategory = category === 'Other' ? customCategory : category;
+      onTopicSubmit(topic, finalCategory, tone);
     }
   };
 
@@ -105,12 +107,29 @@ export default function TopicWizard({ onTopicSubmit, isLoading }: TopicWizardPro
                 </Button>
               ))}
             </div>
+            
+            {/* Custom category input when "Other" is selected */}
+            {category === 'Other' && (
+              <div className="mt-4">
+                <Label htmlFor="customCategory">Enter your custom category</Label>
+                <Input
+                  id="customCategory"
+                  value={customCategory}
+                  onChange={(e) => setCustomCategory(e.target.value)}
+                  placeholder="e.g., Travel, Food, Fashion, etc."
+                  className="mt-2"
+                />
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleBack}>
               Back
             </Button>
-            <Button onClick={handleNext} disabled={!category}>
+            <Button 
+              onClick={handleNext} 
+              disabled={!category || (category === 'Other' && !customCategory.trim())}
+            >
               Next
             </Button>
           </div>

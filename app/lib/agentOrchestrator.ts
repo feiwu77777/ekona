@@ -14,6 +14,7 @@ interface BlogGenerationResult {
   title: string;
   content: string;
   images: any[];
+  allImages: any[]; // All scored images for review
   references: any[];
   metadata: {
     generationTime: number;
@@ -51,6 +52,7 @@ export class AgentOrchestrator {
     let researchData: any[] = [];
     let generatedContent = '';
     let images: any[] = [];
+    let allImages: any[] = [];
     let references: any[] = [];
 
     try {
@@ -77,8 +79,12 @@ export class AgentOrchestrator {
       if (request.includeImages) {
         console.log('Step 3: Finding relevant images...');
         console.log('Using keywords from blog:', blogResult.keywords);
-        images = await this.imageAgent.findRelevantImages(generatedContent, request.topic, blogResult.keywords);
-        console.log(`Found ${images.length} relevant images`);
+        allImages = await this.imageAgent.findRelevantImages(generatedContent, request.topic, blogResult.keywords);
+        console.log(`Found ${allImages.length} total images`);
+        
+        // Use all images for embedding - let the image agent handle distribution
+        images = allImages;
+        console.log(`Using all ${images.length} images for embedding`);
         
         // Embed images in content
         generatedContent = await this.imageAgent.embedImagesInMarkdown(generatedContent, images);
@@ -99,6 +105,7 @@ export class AgentOrchestrator {
         title: blogResult.title,
         content: generatedContent,
         images,
+        allImages,
         references,
         metadata: {
           generationTime,
@@ -106,7 +113,7 @@ export class AgentOrchestrator {
           modelUsed: blogResult.metadata.modelUsed,
           generatedAt: new Date().toISOString(),
           researchSources: researchData.length,
-          imagesFound: images.length,
+          imagesFound: allImages.length,
           referencesCount: references.length
         }
       };
@@ -165,11 +172,13 @@ export class AgentOrchestrator {
 
       // Step 3: Images
       let images: any[] = [];
+      let allImages: any[] = [];
       if (request.includeImages) {
         updateProgress('images', 'Finding relevant images...');
         updateProgress('images', `Using keywords: ${blogResult.keywords.join(', ')}`, blogResult.keywords);
-        images = await this.imageAgent.findRelevantImages(blogResult.content, request.topic, blogResult.keywords);
-        updateProgress('images', `Found ${images.length} images`, images);
+        allImages = await this.imageAgent.findRelevantImages(blogResult.content, request.topic, blogResult.keywords);
+        images = allImages; // Use all images for embedding
+        updateProgress('images', `Found ${allImages.length} total images, using all for embedding`, { allImages, images });
         
         blogResult.content = await this.imageAgent.embedImagesInMarkdown(blogResult.content, images);
       }
@@ -185,6 +194,7 @@ export class AgentOrchestrator {
         title: blogResult.title,
         content: blogResult.content,
         images,
+        allImages,
         references: referenceResult.references
       });
 
@@ -192,6 +202,7 @@ export class AgentOrchestrator {
         title: blogResult.title,
         content: blogResult.content,
         images,
+        allImages,
         references: referenceResult.references,
         metadata: {
           generationTime: Date.now(),
@@ -199,7 +210,7 @@ export class AgentOrchestrator {
           modelUsed: blogResult.metadata.modelUsed,
           generatedAt: new Date().toISOString(),
           researchSources: researchData.length,
-          imagesFound: images.length,
+          imagesFound: allImages.length,
           referencesCount: referenceResult.references.length
         }
       };

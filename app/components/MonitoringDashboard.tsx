@@ -28,10 +28,11 @@ export default function MonitoringDashboard() {
   const fetchMetrics = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/monitoring/metrics');
+      const response = await fetch('/api/monitoring/langsmith-metrics');
       if (response.ok) {
         const data = await response.json();
         setMetrics(data.metrics);
+        console.log('Metrics source:', data.source, data.note);
       }
     } catch (error) {
       console.error('Failed to fetch metrics:', error);
@@ -159,7 +160,7 @@ export default function MonitoringDashboard() {
             <CardTitle className="text-sm font-medium">Model</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Gemini 2.5 Pro</div>
+            <div className="text-2xl font-bold">Gemini 2.0 Flash Lite</div>
             <p className="text-xs text-muted-foreground">
               Google AI Studio
             </p>
@@ -220,16 +221,28 @@ export default function MonitoringDashboard() {
           <CardTitle>LangSmith Integration</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-600 mb-4">
-            All LLM calls are automatically logged to LangSmith for detailed analysis and visualization.
-          </p>
+                  <p className="text-sm text-gray-600 mb-4">
+          All LLM calls are automatically logged to LangSmith for detailed analysis and visualization.
+          {metrics.totalCalls === 0 && (
+            <span className="block mt-2 text-orange-600">
+              No data found. Make sure your LangSmith API key is configured and you have generated some blog posts.
+            </span>
+          )}
+        </p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                const langsmithUrl = `https://smith.langchain.com/`;
+                window.open(langsmithUrl, '_blank');
+              }}
+            >
               View LangSmith Dashboard
             </Button>
-            <Button variant="outline" size="sm">
+            {/* <Button variant="outline" size="sm">
               Export Data
-            </Button>
+            </Button> */}
           </div>
         </CardContent>
       </Card>

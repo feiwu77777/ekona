@@ -8,16 +8,19 @@ import { Badge } from '@/components/ui/badge';
 import EditChatInterface from './EditChatInterface';
 import EditHistory from './EditHistory';
 import ImageReviewGallery from './ImageReviewGallery';
+import { calculateWordCount } from '@/app/lib/utils';
 
 interface BlogPreviewProps {
   content: string;
   title?: string;
-  onContentUpdate?: (newContent: string) => void;
-  onEditRequest?: (request: string) => Promise<string>;
+  onContentUpdate?: (newContent: string, newTitle?: string) => void;
+  onEditRequest?: (request: string) => Promise<{ content: string; title: string }>;
   onImageReplace?: (oldImageId: string, newImage: any) => void;
   onImageRemove?: (imageId: string) => void;
   onSearchImages?: (query: string) => Promise<any[]>;
+  onSave?: () => Promise<void>;
   currentImages?: any[];
+  allAvailableImages?: any[];
   className?: string;
 }
 
@@ -30,12 +33,16 @@ export default function BlogPreview({
   onImageRemove,
   onSearchImages,
   currentImages = [],
+  allAvailableImages = [],
   className 
 }: BlogPreviewProps) {
+  // Process content to remove word count information
+  const processedContent = content.replace(/\n\*\*Word Count:\*\*\s*\d+\s*\n?/gi, '\n').trim();
   const [wordCount, setWordCount] = useState(0);
   const [characterCount, setCharacterCount] = useState(0);
   const [readingTime, setReadingTime] = useState(0);
   const [showEditInterface, setShowEditInterface] = useState(false);
+  const [lastEditRequest, setLastEditRequest] = useState<string>('');
   const [editHistory, setEditHistory] = useState<Array<{
     id: string;
     request: string;
@@ -44,20 +51,20 @@ export default function BlogPreview({
   }>>([]);
 
   useEffect(() => {
-    // Calculate word count
-    const words = content.split(/\s+/).filter(word => word.length > 0).length;
+    // Calculate word count using utility function
+    const words = calculateWordCount(processedContent);
     setWordCount(words);
     
     // Calculate character count
-    setCharacterCount(content.length);
+    setCharacterCount(processedContent.length);
     
     // Calculate reading time (average 200 words per minute)
     setReadingTime(Math.ceil(words / 200));
-  }, [content]);
+  }, [processedContent]);
 
   const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(content);
+      await navigator.clipboard.writeText(processedContent);
       // Could add a toast notification here
     } catch (err) {
       console.error('Failed to copy to clipboard:', err);
@@ -65,7 +72,7 @@ export default function BlogPreview({
   };
 
   const downloadMarkdown = () => {
-    const blob = new Blob([content], { type: 'text/markdown' });
+    const blob = new Blob([processedContent], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -76,28 +83,36 @@ export default function BlogPreview({
     URL.revokeObjectURL(url);
   };
 
-  const handleEditRequest = async (request: string): Promise<string> => {
+  const handleEditRequest = async (request: string): Promise<{ content: string; title: string }> => {
     if (!onEditRequest) {
       throw new Error('Edit functionality not available');
     }
-    return await onEditRequest(request);
+    const result = await onEditRequest(request);
+    return result as { content: string; title: string };
   };
 
-  const handleContentUpdate = (newContent: string) => {
-    // Add to edit history
+  const handleContentUpdate = (newContent: string, newTitle?: string) => {
+    // Add to edit history with the actual edit request
     const historyEntry = {
       id: Date.now().toString(),
-      request: 'Last edit request',
+      request: lastEditRequest || 'Edit request',
       timestamp: new Date(),
       contentSnapshot: content
     };
     
     setEditHistory(prev => [historyEntry, ...prev.slice(0, 9)]); // Keep last 10 edits
     
+    // Clear the last edit request
+    setLastEditRequest('');
+    
     // Call parent's onContentUpdate if provided
     if (onContentUpdate) {
-      onContentUpdate(newContent);
+      onContentUpdate(newContent, newTitle);
     }
+  };
+
+  const handleEditRequestStart = (request: string) => {
+    setLastEditRequest(request);
   };
 
   const handleRestore = (contentSnapshot: string) => {
@@ -131,9 +146,10 @@ export default function BlogPreview({
               <EditHistory history={editHistory} onRestore={handleRestore} />
             </>
           )}
-          {onSearchImages && currentImages.length > 0 && (
+          {onSearchImages && (currentImages.length > 0 || allAvailableImages.length > 0) && (
             <ImageReviewGallery
               currentImages={currentImages}
+              allAvailableImages={allAvailableImages}
               onImageReplace={onImageReplace || (() => {})}
               onImageRemove={onImageRemove || (() => {})}
               onSearchImages={onSearchImages}
@@ -152,9 +168,11 @@ export default function BlogPreview({
       {showEditInterface && onEditRequest && (
         <div className="border-t p-4">
           <EditChatInterface
-            originalContent={content}
+            originalContent={processedContent}
+            originalTitle={title}
             onContentUpdate={handleContentUpdate}
             onEditRequest={handleEditRequest}
+            onEditRequestStart={handleEditRequestStart}
           />
         </div>
       )}
@@ -170,13 +188,13 @@ export default function BlogPreview({
           {title && (
             <h1 className="text-3xl font-bold mb-6 text-gray-900">{title}</h1>
           )}
-          <MarkdownPreview content={content} />
+          <MarkdownPreview content={processedContent} />
         </TabsContent>
         
         <TabsContent value="markdown" className="p-6">
           <div className="bg-gray-50 rounded-lg p-4">
             <pre className="text-sm text-gray-800 whitespace-pre-wrap overflow-x-auto">
-              {content}
+              {processedContent}
             </pre>
           </div>
         </TabsContent>
