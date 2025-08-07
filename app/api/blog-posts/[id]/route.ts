@@ -28,7 +28,7 @@ async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
-) {
+): Promise<NextResponse> {
   // Handle CORS preflight
   const corsResponse = handleCors(request);
   if (corsResponse) return corsResponse;
