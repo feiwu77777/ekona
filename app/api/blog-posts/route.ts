@@ -3,7 +3,7 @@ import { createServerSupabase } from '@/app/lib/supabaseClient';
 import { blogPostsService } from '@/app/lib/blogPostsService';
 import { addCorsHeaders, handleCors } from '@/app/lib/cors';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   // Handle CORS preflight
   const corsResponse = handleCors(request);
   if (corsResponse) return corsResponse;
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   // Handle CORS preflight
   const corsResponse = handleCors(request);
   if (corsResponse) return corsResponse;

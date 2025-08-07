@@ -27,14 +27,14 @@ async function getAuthenticatedUserId(request: NextRequest): Promise<string> {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   // Handle CORS preflight
   const corsResponse = handleCors(request);
   if (corsResponse) return corsResponse;
 
   try {
-    const postId = params.id;
+    const { id: postId } = await params;
     const userId = await getAuthenticatedUserId(request);
 
     const blogPost = await blogPostsService.getBlogPost(postId, userId);
@@ -69,14 +69,14 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
   // Handle CORS preflight
   const corsResponse = handleCors(request);
   if (corsResponse) return corsResponse;
 
   try {
-    const postId = params.id;
+    const { id: postId } = await params;
     const updateData = await request.json();
     const userId = await getAuthenticatedUserId(request);
 
@@ -115,14 +115,14 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
   // Handle CORS preflight
   const corsResponse = handleCors(request);
   if (corsResponse) return corsResponse;
 
   try {
-    const postId = params.id;
+    const { id: postId } = await params;
     const userId = await getAuthenticatedUserId(request);
 
     // Validate that the blog post exists and belongs to the user
