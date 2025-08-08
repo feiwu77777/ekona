@@ -350,9 +350,19 @@ export default function ImageReviewGallery({
                                     image.photographer
                                   }`}
                             </p>
-                            <p className="text-xs text-gray-400 mb-3 flex-shrink-0">
-                              Section {index + 1}
-                            </p>
+                            <div className="flex items-center justify-between mb-3 flex-shrink-0">
+                              <p className="text-xs text-gray-400">
+                                Section {index + 1}
+                              </p>
+                              {pendingIndexReplace && (
+                                <Badge
+                                  variant="default"
+                                  className="text-xs bg-green-600"
+                                >
+                                  Pending Replace
+                                </Badge>
+                              )}
+                            </div>
                             <div className="mt-auto">
                               {isRemoved && !pendingIndexReplace ? (
                                 <div className="flex gap-2">
@@ -391,12 +401,6 @@ export default function ImageReviewGallery({
                                 </div>
                               ) : pendingIndexReplace ? (
                                 <div className="flex flex-col gap-2">
-                                  <Badge
-                                    variant="default"
-                                    className="w-full justify-center bg-green-600"
-                                  >
-                                    Pending Replace
-                                  </Badge>
                                   <Button
                                     variant="outline"
                                     size="sm"
