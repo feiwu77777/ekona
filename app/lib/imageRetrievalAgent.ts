@@ -30,7 +30,6 @@ export class ImageRetrievalAgent {
     const allImages = await this.searchImages(searchQueries);
     // Step 4: Score relevance using AI (or fallback to keyword matching)
     const scoredImages = await this.scoreImageRelevance(allImages, topic);
-    console.log("Scored images:", scoredImages);
     // Step 5: Return all scored images (no slicing) for maximum choice
     return scoredImages.sort((a, b) => b.relevanceScore! - a.relevanceScore!);
   }
@@ -155,12 +154,13 @@ export class ImageRetrievalAgent {
       
       if (relevantImage) {
         // Proper Unsplash attribution as required by API Terms
-        const attribution = `\n![${relevantImage.alt}](${relevantImage.url})\n\n*Photo by [${relevantImage.photographer}](https://unsplash.com/@${relevantImage.photographerUsername}) on [Unsplash](https://unsplash.com)*\n\n## ${section}`;
+        const attribution = `\n![${relevantImage.alt}](${relevantImage.url})\n\n*Photo by [${relevantImage.photographer}](https://unsplash.com/@${relevantImage.photographerUsername}) on [Unsplash](https://unsplash.com)*\n\n`;
         
         // Track the download event for Unsplash compliance
         this.trackImageDownload(relevantImage.id);
         
-        return attribution;
+        // Place image after the section content
+        return `\n## ${section}${attribution}`;
       }
       
       return `\n## ${section}`;
@@ -223,7 +223,7 @@ export class ImageRetrievalAgent {
   async searchImagesByQuery(query: string): Promise<ImageData[]> {
     try {
       const response = await fetch(
-        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=15&orientation=landscape`,
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=5&orientation=landscape`,
         {
           headers: {
             'Authorization': `Client-ID ${this.unsplashAccessKey}`

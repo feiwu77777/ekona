@@ -48,7 +48,7 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [generatedBlog, setGeneratedBlog] = useState<BlogGenerationResult | null>(null);
-  const [removedImages, setRemovedImages] = useState<string[]>([]);
+  const [removedIndices, setRemovedIndices] = useState<string[]>([]);
 
   // Authentication useEffect
   useEffect(() => {
@@ -278,7 +278,7 @@ export default function Home() {
                   title={generatedBlog.title}
                   currentImages={generatedBlog.images}
                   allAvailableImages={generatedBlog.allImages}
-                  removedImages={removedImages}
+                  removedImages={removedIndices}
                   onContentUpdate={async (newContent, newTitle) => {
                     setGeneratedBlog(prev => prev ? {
                       ...prev,
@@ -391,20 +391,27 @@ export default function Home() {
                       const updatedImages = [...prev.images];
                       updatedImages[index] = newImage;
 
-                      // Update the blog content to replace the image markdown
+                      // Update the blog content
                       let updatedContent = prev.content;
-
-                      // Pattern to match the old image markdown block
-                      const oldImagePattern = new RegExp(
-                        `\\n!\\[${oldImage.alt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]\\(${oldImage.url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)\\n\\n\\*Photo by \\[${oldImage.photographer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]\\(https://unsplash\\.com/@[^)]+\\) on \\[Unsplash\\]\\(https://unsplash\\.com\\)\\*\\n\\n`,
-                        'g'
-                      );
-
-                      // New image markdown
                       const newImageMarkdown = `\n![${newImage.alt}](${newImage.url})\n\n*Photo by [${newImage.photographer}](https://unsplash.com/@${newImage.photographerUsername}) on [Unsplash](https://unsplash.com)*\n\n`;
 
-                      // Replace the old image markdown with the new one
-                      updatedContent = updatedContent.replace(oldImagePattern, newImageMarkdown);
+                      // Replace image in the specific section by index
+                      const contentSections = updatedContent.split(/\n(?=##\s)/);
+                      
+                      if (contentSections.length > index + 1) {
+                        const targetSection = contentSections[index + 1];
+                        
+                        // Remove any existing image markdown from this section
+                        const imageMarkdownPattern = /\n!\[[^\]]*\]\([^)]+\)\n\n\*Photo by \[[^\]]*\]\([^)]+\) on \[Unsplash\]\([^)]+\)\*\n\n/g;
+                        const sectionWithoutImage = targetSection.replace(imageMarkdownPattern, '\n\n');
+                        
+                        // Insert new image at the end of the section (after all content)
+                        contentSections[index + 1] = sectionWithoutImage + newImageMarkdown;
+                        updatedContent = contentSections.join('\n');
+                      }
+                      
+                      // Remove from removedIndices since we're adding an image back
+                      setRemovedIndices(prev => prev.filter(idx => idx !== index.toString()));
 
                       return {
                         ...prev,
@@ -413,28 +420,31 @@ export default function Home() {
                       };
                     });
                   }}
-                  onImageRemove={(imageId: string) => {
-                    // Track the removed image
-                    setRemovedImages(prev => [...prev, imageId]);
+                  onImageRemove={(imageIndex: string) => {
+                    // Track the removed index
+                    setRemovedIndices(prev => [...prev, imageIndex]);
                     
                     // Update the blog content to remove the image markdown
                     setGeneratedBlog(prev => {
                       if (!prev) return null;
                       
-                      // Find the image to get its details for removal
-                      const imageToRemove = prev.images.find(img => img.id === imageId);
-                      if (!imageToRemove) return prev;
-                      
-                      // Remove the image markdown from the content
+                      // Remove image from the specific section by index
+                      const index = parseInt(imageIndex);
                       let updatedContent = prev.content;
                       
-                      // Pattern to match the image markdown block
-                      const imagePattern = new RegExp(
-                        `\\n!\\[${imageToRemove.alt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]\\(${imageToRemove.url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)\\n\\n\\*Photo by \\[${imageToRemove.photographer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]\\(https://unsplash\\.com/@[^)]+\\) on \\[Unsplash\\]\\(https://unsplash\\.com\\)\\*\\n\\n`,
-                        'g'
-                      );
+                      // Split content by sections and remove image from the specific section
+                      const contentSections = updatedContent.split(/\n(?=##\s)/);
                       
-                      updatedContent = updatedContent.replace(imagePattern, '\n\n');
+                      if (contentSections.length > index + 1) {
+                        const targetSection = contentSections[index + 1];
+                        
+                        // Remove any image markdown from this section
+                        const imageMarkdownPattern = /\n!\[[^\]]*\]\([^)]+\)\n\n\*Photo by \[[^\]]*\]\([^)]+\) on \[Unsplash\]\([^)]+\)\*\n\n/g;
+                        const sectionWithoutImage = targetSection.replace(imageMarkdownPattern, '\n\n');
+                        
+                        contentSections[index + 1] = sectionWithoutImage;
+                        updatedContent = contentSections.join('\n');
+                      }
                       
                       return {
                         ...prev,

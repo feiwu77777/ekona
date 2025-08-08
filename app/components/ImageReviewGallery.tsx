@@ -53,10 +53,19 @@ export default function ImageReviewGallery({
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([]);
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+  
+  // Local state for expanded available images (includes search results)
+  const [expandedAvailableImages, setExpandedAvailableImages] = useState<ImageData[]>(allAvailableImages);
 
   // Refs for scrolling
   const allAvailableImagesRef = useRef<HTMLDivElement>(null);
   const searchSectionRef = useRef<HTMLDivElement>(null);
+  const dialogContentRef = useRef<HTMLDivElement>(null);
+
+  // Sync expandedAvailableImages with prop changes
+  useEffect(() => {
+    setExpandedAvailableImages(allAvailableImages);
+  }, [allAvailableImages]);
 
   // Reset state when dialog opens/closes
   useEffect(() => {
@@ -75,6 +84,13 @@ export default function ImageReviewGallery({
     try {
       const results = await onSearchImages(searchQuery);
       setSearchResults(results);
+      
+      // Append new search results to expandedAvailableImages (avoid duplicates)
+      setExpandedAvailableImages(prev => {
+        const existingIds = new Set(prev.map(img => img.id));
+        const newImages = results.filter(img => !existingIds.has(img.id));
+        return [...prev, ...newImages];
+      });
     } catch (error) {
       console.error("Failed to search images:", error);
     } finally {
@@ -117,14 +133,14 @@ export default function ImageReviewGallery({
     }
   };
 
-  const handleRemoveImage = (imageId: string) => {
-    const originalImage = currentImages.find((img) => img.id === imageId);
+  const handleRemoveImage = (imageIndex: number) => {
+    const originalImage = currentImages[imageIndex];
     if (originalImage) {
       setPendingChanges((prev) => [
         ...prev,
         {
           type: "remove",
-          imageId,
+          imageId: imageIndex.toString(),
           originalImage,
         },
       ]);
@@ -153,6 +169,7 @@ export default function ImageReviewGallery({
           }
           break;
         case "remove":
+          // change.imageId is now the index as string, pass it directly
           onImageRemove(change.imageId);
           break;
 
@@ -212,9 +229,17 @@ export default function ImageReviewGallery({
   };
 
   const scrollToTop = () => {
-    const dialogContent = document.querySelector('[role="dialog"]');
-    if (dialogContent) {
-      dialogContent.scrollTo({ top: 0, behavior: 'smooth' });
+    if (dialogContentRef.current) {
+      dialogContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // Fallback: try to find the dialog content by various selectors
+      const dialogContent = document.querySelector('[data-radix-scroll-area-viewport]') || 
+                          document.querySelector('.DialogContent') ||
+                          document.querySelector('[role="dialog"] > div') ||
+                          document.querySelector('[role="dialog"]');
+      if (dialogContent) {
+        dialogContent.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   };
 
@@ -254,7 +279,7 @@ export default function ImageReviewGallery({
             </div>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto min-h-0">
+          <div ref={dialogContentRef} className="flex-1 overflow-y-auto min-h-0">
             {/* Current Images Section */}
             <div className="mb-6">
               <h3 className="font-medium mb-4 text-lg sticky top-0 bg-background z-10 py-2">
@@ -268,13 +293,13 @@ export default function ImageReviewGallery({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-4">
                   {currentImages.map((image, index) => {
                     const isPendingRemove = pendingChanges.some(
-                      (c) => c.type === "remove" && c.imageId === image.id
+                      (c) => c.type === "remove" && c.imageId === index.toString()
                     );
                     const isPermanentlyRemoved = removedImages.includes(
-                      image.id
+                      index.toString()
                     );
                     const pendingReplace = pendingChanges.find(
-                      (c) => c.type === "replace" && c.imageId === image.id
+                      (c) => c.type === "replace" && c.imageId === index.toString()
                     );
                     const pendingIndexReplace = pendingChanges.find(
                       (c) => c.type === "replace" && c.imageId === `index-${index}`
@@ -335,13 +360,33 @@ export default function ImageReviewGallery({
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
-                                    handleImageSelection(`index-${index}`);
-                                    setSearchQuery(""); // Clear search query for user input
-                                    setSearchResults([]); // Clear previous results
+                                    if (selectedImageId && selectedImageId.startsWith("available-")) {
+                                      // An available image is selected, add it to this empty slot
+                                      const availableImageId = selectedImageId.replace("available-", "");
+                                      const selectedImage = expandedAvailableImages.find(img => img.id === availableImageId);
+                                      
+                                      if (selectedImage) {
+                                        setPendingChanges((prev) => [
+                                          ...prev,
+                                          {
+                                            type: "replace",
+                                            imageId: `index-${index}`,
+                                            newImage: selectedImage,
+                                          },
+                                        ]);
+                                        setSelectedImageId(null);
+                                        scrollToTop();
+                                      }
+                                    } else {
+                                      // Normal flow - select this slot for image addition
+                                      handleImageSelection(`index-${index}`);
+                                      setSearchQuery(""); // Clear search query for user input
+                                      setSearchResults([]); // Clear previous results
+                                    }
                                   }}
-                                  className="flex-1"
+                                  className={`flex-1 ${selectedImageId && selectedImageId.startsWith("available-") ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
                                 >
-                                  Add Image
+                                  {selectedImageId && selectedImageId.startsWith("available-") ? "Select" : "Add Image"}
                                 </Button>
                               </div>
                             ) : pendingIndexReplace ? (
@@ -371,19 +416,43 @@ export default function ImageReviewGallery({
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleImageSelection(`index-${index}`)}
+                                  onClick={() => {
+                                    if (selectedImageId && selectedImageId.startsWith("available-")) {
+                                      // An available image is selected, replace this current image with it
+                                      const availableImageId = selectedImageId.replace("available-", "");
+                                      const selectedImage = expandedAvailableImages.find(img => img.id === availableImageId);
+                                      
+                                      if (selectedImage) {
+                                        setPendingChanges((prev) => [
+                                          ...prev,
+                                          {
+                                            type: "replace",
+                                            imageId: `index-${index}`,
+                                            newImage: selectedImage,
+                                          },
+                                        ]);
+                                        setSelectedImageId(null);
+                                        scrollToTop();
+                                      }
+                                    } else {
+                                      // Normal replace flow - select this image position for replacement
+                                      handleImageSelection(`index-${index}`);
+                                    }
+                                  }}
                                   className="flex-1"
                                 >
-                                  Replace
+                                  {selectedImageId && selectedImageId.startsWith("available-") ? "Select" : "Replace"}
                                 </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => handleRemoveImage(image.id)}
-                                  className="flex-1"
-                                >
-                                  Remove
-                                </Button>
+                                {!selectedImageId && (
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleRemoveImage(index)}
+                                    className="flex-1"
+                                  >
+                                    Remove
+                                  </Button>
+                                )}
                               </div>
                             )}
                           </div>
@@ -396,24 +465,28 @@ export default function ImageReviewGallery({
             </div>
 
             {/* All Available Images Section */}
-            {allAvailableImages.length > 0 && (
+            {expandedAvailableImages.length > 0 && (
               <div ref={allAvailableImagesRef} className="mb-6">
                 <div className="border-t my-6"></div>
                 <h3 className="font-medium mb-4 text-lg sticky top-0 bg-background z-10 py-2">
-                  All Available Images ({allAvailableImages.length})
+                  All Available Images ({expandedAvailableImages.length})
                 </h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  These are all the images found during blog generation. Click
+                  These are all the images found during blog generation and search results. Click
                   to add any to your blog post.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-4">
-                  {allAvailableImages.map((image, index) => {
+                  {expandedAvailableImages.map((image, index) => {
 
 
                     return (
                       <div
-                        key={`available-${image.id}`}
-                        className="border rounded-lg p-3 bg-blue-50"
+                        key={`available-${image.id}-${index}`}
+                        className={`border rounded-lg p-3 bg-blue-50 ${
+                          selectedImageId === `available-${image.id}`
+                            ? "border-4 border-blue-500 shadow-lg"
+                            : "border"
+                        }`}
                       >
                         <div className="flex flex-col">
                           <img
@@ -432,12 +505,20 @@ export default function ImageReviewGallery({
                               By {image.photographer}
                             </p>
 
-                                                          <Button
+                            <Button
                               size="sm"
-                              className={`w-full ${selectedImageId ? "bg-green-600 hover:bg-green-700" : ""}`}
-                              onClick={() => handleReplaceImage(image)}
+                              className={`w-full ${selectedImageId && !selectedImageId.startsWith("available-") ? "bg-green-600 hover:bg-green-700" : ""}`}
+                              onClick={() => {
+                                if (selectedImageId && !selectedImageId.startsWith("available-")) {
+                                  handleReplaceImage(image);
+                                } else {
+                                  // Start selection mode - highlight this image and scroll to top
+                                  setSelectedImageId(`available-${image.id}`);
+                                  scrollToTop();
+                                }
+                              }}
                             >
-                              {selectedImageId ? "Select" : "Replace"}
+                              {selectedImageId && selectedImageId.startsWith("index-") ? "Select" : "Add to Blog"}
                             </Button>
                           </div>
                         </div>
@@ -469,49 +550,19 @@ export default function ImageReviewGallery({
               </div>
 
               <div className="pb-4">
-                {searchResults.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {searchResults.map((image) => (
-                      <div
-                        key={image.id}
-                        className="border rounded-lg p-3 bg-white"
-                      >
-                        <div className="flex flex-col">
-                          <img
-                            src={image.url}
-                            alt={image.alt}
-                            className="w-full h-40 object-cover rounded-lg shadow-sm mb-3"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                          <div className="flex-1">
-                            <p className="font-medium text-sm mb-1 line-clamp-2">
-                              {image.alt}
-                            </p>
-                            <p className="text-xs text-gray-500 mb-3">
-                              By {image.photographer}
-                            </p>
-                            {selectedImageId && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleReplaceImage(image)}
-                                className="w-full bg-blue-600 hover:bg-blue-700"
-                              >
-                                Select
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
                 {searchQuery && searchResults.length === 0 && !isSearching && (
                   <p className="text-gray-500 text-center py-8">
                     No images found for "{searchQuery}"
                   </p>
+                )}
+                
+                {isSearching && (
+                  <div className="text-center py-8">
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+                      <p className="text-gray-500">Searching for images...</p>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
