@@ -147,12 +147,11 @@ export class ImageRetrievalAgent {
 
   async embedImagesInMarkdown(markdown: string, images: ImageData[]): Promise<string> {
     const sections = markdown.split('\n## ');
-    const numSections = sections.length - 1;
     const embeddedSections = sections.map((section, index) => {
       if (index === 0) return section; // Skip title section
       
       // Find relevant image for this section
-      const relevantImage = this.findRelevantImageForSection(section, images.slice(0, numSections), index - 1);
+      const relevantImage = this.findRelevantImageForSection(section, images, index - 1);
       
       if (relevantImage) {
         // Proper Unsplash attribution as required by API Terms

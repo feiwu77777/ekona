@@ -82,9 +82,14 @@ export class AgentOrchestrator {
         allImages = await this.imageAgent.findRelevantImages(generatedContent, request.topic, blogResult.keywords);
         console.log(`Found ${allImages.length} total images`);
         
-        // Use all images for embedding - let the image agent handle distribution
-        images = allImages;
-        console.log(`Using all ${images.length} images for embedding`);
+        // Count the number of sections in the blog content
+        const sections = generatedContent.split('\n## ');
+        const numSections = sections.length - 1; // Exclude the title section
+        console.log(`Blog has ${numSections} sections`);
+        
+        // Use only the first N images (where N = number of sections) for embedding
+        images = allImages.slice(0, numSections);
+        console.log(`Using ${images.length} images for embedding (one per section)`);
         
         // Embed images in content
         generatedContent = await this.imageAgent.embedImagesInMarkdown(generatedContent, images);
@@ -177,8 +182,15 @@ export class AgentOrchestrator {
         updateProgress('images', 'Finding relevant images...');
         updateProgress('images', `Using keywords: ${blogResult.keywords.join(', ')}`, blogResult.keywords);
         allImages = await this.imageAgent.findRelevantImages(blogResult.content, request.topic, blogResult.keywords);
-        images = allImages; // Use all images for embedding
-        updateProgress('images', `Found ${allImages.length} total images, using all for embedding`, { allImages, images });
+        
+        // Count the number of sections in the blog content
+        const sections = blogResult.content.split('\n## ');
+        const numSections = sections.length - 1; // Exclude the title section
+        console.log(`Blog has ${numSections} sections`);
+        
+        // Use only the first N images (where N = number of sections) for embedding
+        images = allImages.slice(0, numSections);
+        updateProgress('images', `Found ${allImages.length} total images, using ${images.length} for embedding (one per section)`, { allImages, images });
         
         blogResult.content = await this.imageAgent.embedImagesInMarkdown(blogResult.content, images);
       }

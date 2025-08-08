@@ -48,6 +48,7 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [generatedBlog, setGeneratedBlog] = useState<BlogGenerationResult | null>(null);
+  const [removedImages, setRemovedImages] = useState<string[]>([]);
 
   // Authentication useEffect
   useEffect(() => {
@@ -277,6 +278,7 @@ export default function Home() {
                   title={generatedBlog.title}
                   currentImages={generatedBlog.images}
                   allAvailableImages={generatedBlog.allImages}
+                  removedImages={removedImages}
                   onContentUpdate={async (newContent, newTitle) => {
                     setGeneratedBlog(prev => prev ? {
                       ...prev,
@@ -363,32 +365,82 @@ export default function Home() {
                       throw error;
                     }
                   }}
-                  onImageReplace={(oldImageId: string, newImage: any) => {
+                  onImageReplace={(imageIndex: string, newImage: any) => {
                     setGeneratedBlog(prev => {
                       if (!prev) return null;
 
-                      if (oldImageId === '') {
-                        // Add new image
-                        return {
-                          ...prev,
-                          images: [...prev.images, newImage]
-                        };
+                      // Convert string index to number, or find index by ID if it's an ID
+                      let index: number;
+                      if (imageIndex === '') {
+                        // Empty string means append (but we don't want this for fixed-length)
+                        return prev;
+                      } else if (!isNaN(Number(imageIndex))) {
+                        // It's a numeric index
+                        index = Number(imageIndex);
                       } else {
-                        // Replace existing image
-                        return {
-                          ...prev,
-                          images: prev.images.map((img: any) => 
-                            img.id === oldImageId ? newImage : img
-                          )
-                        };
+                        // It's an ID, find the index
+                        index = prev.images.findIndex(img => img.id === imageIndex);
+                        if (index === -1) return prev;
                       }
+
+                      // Get the old image at this index
+                      const oldImage = prev.images[index];
+                      if (!oldImage) return prev;
+
+                      // Update the images array by index
+                      const updatedImages = [...prev.images];
+                      updatedImages[index] = newImage;
+
+                      // Update the blog content to replace the image markdown
+                      let updatedContent = prev.content;
+
+                      // Pattern to match the old image markdown block
+                      const oldImagePattern = new RegExp(
+                        `\\n!\\[${oldImage.alt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]\\(${oldImage.url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)\\n\\n\\*Photo by \\[${oldImage.photographer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]\\(https://unsplash\\.com/@[^)]+\\) on \\[Unsplash\\]\\(https://unsplash\\.com\\)\\*\\n\\n`,
+                        'g'
+                      );
+
+                      // New image markdown
+                      const newImageMarkdown = `\n![${newImage.alt}](${newImage.url})\n\n*Photo by [${newImage.photographer}](https://unsplash.com/@${newImage.photographerUsername}) on [Unsplash](https://unsplash.com)*\n\n`;
+
+                      // Replace the old image markdown with the new one
+                      updatedContent = updatedContent.replace(oldImagePattern, newImageMarkdown);
+
+                      return {
+                        ...prev,
+                        images: updatedImages,
+                        content: updatedContent
+                      };
                     });
                   }}
                   onImageRemove={(imageId: string) => {
-                    setGeneratedBlog(prev => prev ? {
-                      ...prev,
-                      images: prev.images.filter((img: any) => img.id !== imageId)
-                    } : null);
+                    // Track the removed image
+                    setRemovedImages(prev => [...prev, imageId]);
+                    
+                    // Update the blog content to remove the image markdown
+                    setGeneratedBlog(prev => {
+                      if (!prev) return null;
+                      
+                      // Find the image to get its details for removal
+                      const imageToRemove = prev.images.find(img => img.id === imageId);
+                      if (!imageToRemove) return prev;
+                      
+                      // Remove the image markdown from the content
+                      let updatedContent = prev.content;
+                      
+                      // Pattern to match the image markdown block
+                      const imagePattern = new RegExp(
+                        `\\n!\\[${imageToRemove.alt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]\\(${imageToRemove.url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)\\n\\n\\*Photo by \\[${imageToRemove.photographer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]\\(https://unsplash\\.com/@[^)]+\\) on \\[Unsplash\\]\\(https://unsplash\\.com\\)\\*\\n\\n`,
+                        'g'
+                      );
+                      
+                      updatedContent = updatedContent.replace(imagePattern, '\n\n');
+                      
+                      return {
+                        ...prev,
+                        content: updatedContent
+                      };
+                    });
                   }}
                   onSearchImages={async (query: string) => {
                     try {

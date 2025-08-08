@@ -21,6 +21,7 @@ interface BlogPreviewProps {
   onSave?: () => Promise<void>;
   currentImages?: any[];
   allAvailableImages?: any[];
+  removedImages?: string[];
   className?: string;
 }
 
@@ -34,6 +35,7 @@ export default function BlogPreview({
   onSearchImages,
   currentImages = [],
   allAvailableImages = [],
+  removedImages = [],
   className 
 }: BlogPreviewProps) {
   // Process content to remove word count information
@@ -121,6 +123,13 @@ export default function BlogPreview({
     }
   };
 
+  const handleImageRemove = (imageId: string) => {
+    // Call the parent's onImageRemove if provided
+    if (onImageRemove) {
+      onImageRemove(imageId);
+    }
+  };
+
   return (
     <div className={`border rounded-lg overflow-hidden ${className}`}>
       {/* Header */}
@@ -146,13 +155,14 @@ export default function BlogPreview({
               <EditHistory history={editHistory} onRestore={handleRestore} />
             </>
           )}
-          {onSearchImages && (currentImages.length > 0 || allAvailableImages.length > 0) && (
+          {onSearchImages && (
             <ImageReviewGallery
               currentImages={currentImages}
               allAvailableImages={allAvailableImages}
               onImageReplace={onImageReplace || (() => {})}
-              onImageRemove={onImageRemove || (() => {})}
+              onImageRemove={handleImageRemove}
               onSearchImages={onSearchImages}
+              removedImages={removedImages}
             />
           )}
           <Button variant="outline" size="sm" onClick={copyToClipboard}>
