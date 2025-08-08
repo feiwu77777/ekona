@@ -24,6 +24,11 @@ interface BlogGenerationResult {
     researchSources: number;
     imagesFound: number;
     referencesCount: number;
+    tokenUsage?: {
+      inputTokens: number;
+      outputTokens: number;
+    };
+    estimatedCost?: number;
   };
 }
 
@@ -119,7 +124,9 @@ export class AgentOrchestrator {
           generatedAt: new Date().toISOString(),
           researchSources: researchData.length,
           imagesFound: allImages.length,
-          referencesCount: references.length
+          referencesCount: references.length,
+          tokenUsage: blogResult.metadata.tokenUsage,
+          estimatedCost: blogResult.metadata.estimatedCost
         }
       };
 

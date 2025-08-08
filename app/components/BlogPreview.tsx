@@ -51,6 +51,7 @@ export default function BlogPreview({
     timestamp: Date;
     contentSnapshot: string;
   }>>([]);
+  const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
     // Calculate word count using utility function
@@ -66,15 +67,18 @@ export default function BlogPreview({
 
   const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(processedContent);
-      // Could add a toast notification here
+      const fullContent = title ? `# ${title}\n\n${processedContent}` : processedContent;
+      await navigator.clipboard.writeText(fullContent);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
     } catch (err) {
       console.error('Failed to copy to clipboard:', err);
     }
   };
 
   const downloadMarkdown = () => {
-    const blob = new Blob([processedContent], { type: 'text/markdown' });
+    const fullContent = title ? `# ${title}\n\n${processedContent}` : processedContent;
+    const blob = new Blob([fullContent], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -165,8 +169,13 @@ export default function BlogPreview({
               removedImages={removedImages}
             />
           )}
-          <Button variant="outline" size="sm" onClick={copyToClipboard}>
-            Copy
+          <Button 
+            variant={isCopied ? "default" : "outline"} 
+            size="sm" 
+            onClick={copyToClipboard}
+            className={isCopied ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+          >
+            {isCopied ? "Copied!" : "Copy"}
           </Button>
           <Button variant="outline" size="sm" onClick={downloadMarkdown}>
             Download
@@ -204,7 +213,7 @@ export default function BlogPreview({
         <TabsContent value="markdown" className="p-6">
           <div className="bg-gray-50 rounded-lg p-4">
             <pre className="text-sm text-gray-800 whitespace-pre-wrap overflow-x-auto">
-              {processedContent}
+              {title ? `# ${title}\n\n${processedContent}` : processedContent}
             </pre>
           </div>
         </TabsContent>

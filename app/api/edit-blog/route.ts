@@ -87,7 +87,9 @@ export async function POST(request: NextRequest) {
       metadata: {
         editTime,
         originalWordCount: originalContent.split(/\s+/).length,
-        newWordCount: editResult.content.split(/\s+/).length
+        newWordCount: editResult.content.split(/\s+/).length,
+        tokenUsage: editResult.tokenUsage,
+        estimatedCost: editResult.estimatedCost
       }
     });
 

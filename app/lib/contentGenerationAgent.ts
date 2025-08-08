@@ -1,4 +1,23 @@
-import { traceableGemini } from './langchainClient';
+import { createLangChainGemini } from './langchainClient';
+
+// Import the cost calculation function
+function calculateGeminiCost(tokenUsage: any, modelName: string): number {
+  if (!tokenUsage) return 0;
+  
+  const rates = {
+    'gemini-2.0-flash-lite': { input: 0.000075, output: 0.0003 }, // per 1K tokens
+    'gemini-2.0-flash': { input: 0.000075, output: 0.0003 },
+    'gemini-2.0-pro': { input: 0.000375, output: 0.0015 },
+    'gemini-1.5-pro': { input: 0.000375, output: 0.0015 },
+    'gemini-1.5-flash': { input: 0.000075, output: 0.0003 }
+  };
+  
+  const rate = rates[modelName as keyof typeof rates] || rates['gemini-2.0-flash-lite'];
+  const inputCost = (tokenUsage.inputTokens || 0) * rate.input / 1000;
+  const outputCost = (tokenUsage.outputTokens || 0) * rate.output / 1000;
+  
+  return inputCost + outputCost;
+}
 
 interface BlogGenerationOptions {
   topic: string;
@@ -18,19 +37,40 @@ interface GeneratedBlog {
     tone: string;
     generatedAt: string;
     modelUsed: string;
+    tokenUsage?: {
+      inputTokens: number;
+      outputTokens: number;
+    };
+    estimatedCost?: number;
   };
 }
+
+const DEFAULT_MODEL = 'gemini-2.0-flash-lite';
 
 export class ContentGenerationAgent {
   async generateBlog(options: BlogGenerationOptions): Promise<GeneratedBlog> {
     // Step 1: Create structured prompt
     const prompt = this.buildPrompt(options);
     
-    // Step 2: Generate content with LangSmith tracing
-    const generatedText = await traceableGemini(prompt);
+    // Step 2: Generate content with enhanced LangChain monitoring
+    const geminiLLM = createLangChainGemini(DEFAULT_MODEL);
+    const response = await geminiLLM.invoke([{ role: 'user', content: prompt }]);
+    const generatedText = response.content as string;
     
-    // Step 3: Parse and structure the response
+    // Step 3: Get token usage from the callback handler
+    const tokenUsage = (geminiLLM as any).getTokenUsage?.() || null;
+    
+    // Step 4: Parse and structure the response
     const parsedBlog = this.parseGeneratedContent(generatedText, options);
+    
+    // Step 5: Add token usage to metadata if available
+    if (tokenUsage) {
+      parsedBlog.metadata = {
+        ...parsedBlog.metadata,
+        tokenUsage,
+        estimatedCost: calculateGeminiCost(tokenUsage, DEFAULT_MODEL)
+      };
+    }
     
     return parsedBlog;
   }
@@ -137,7 +177,7 @@ Write the blog post now:
       metadata: {
         tone: options.tone,
         generatedAt: new Date().toISOString(),
-        modelUsed: "gemini-2.5-pro"
+        modelUsed: DEFAULT_MODEL
       }
     };
   }
@@ -161,7 +201,7 @@ Write the blog post now:
       .map(([word]) => word);
   }
 
-  async editBlog(originalContent: string, editRequest: string): Promise<{ title: string; content: string }> {
+  async editBlog(originalContent: string, editRequest: string): Promise<{ title: string; content: string; tokenUsage?: any; estimatedCost?: number }> {
     const prompt = `
 Original blog content:
 ${originalContent}
@@ -179,7 +219,13 @@ Edit request: ${editRequest}
 Please provide the edited blog content with the requested changes:
 `;
 
-    const editedContent = await traceableGemini(prompt);
+    const geminiLLM = createLangChainGemini(DEFAULT_MODEL);
+    const response = await geminiLLM.invoke([{ role: 'user', content: prompt }]);
+    const editedContent = response.content as string;
+    
+    // Get token usage from the callback handler
+    const tokenUsage = (geminiLLM as any).getTokenUsage?.() || null;
+    const estimatedCost = tokenUsage ? calculateGeminiCost(tokenUsage, DEFAULT_MODEL) : undefined;
     
     // Parse the edited content to extract title and content
     const titleMatch = editedContent.match(/^# (.+)$/m);
@@ -190,7 +236,9 @@ Please provide the edited blog content with the requested changes:
     
     return {
       title,
-      content: contentWithoutTitle
+      content: contentWithoutTitle,
+      tokenUsage,
+      estimatedCost
     };
   }
 }

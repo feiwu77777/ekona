@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 export default function LangSmithTest() {
   const [prompt, setPrompt] = useState('Write a short blog post about artificial intelligence');
   const [result, setResult] = useState('');
+  const [tokenUsage, setTokenUsage] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -31,6 +32,7 @@ export default function LangSmithTest() {
 
       const data = await response.json();
       setResult(data.result);
+      setTokenUsage(data.tokenUsage);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -81,6 +83,17 @@ export default function LangSmithTest() {
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-green-800 font-medium mb-2">Result:</p>
               <div className="text-green-700 whitespace-pre-wrap">{result}</div>
+            </div>
+          )}
+
+          {tokenUsage && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-800 font-medium mb-2">Token Usage:</p>
+              <div className="text-blue-700">
+                <p>Input Tokens: {tokenUsage.inputTokens}</p>
+                <p>Output Tokens: {tokenUsage.outputTokens}</p>
+                <p>Total Tokens: {tokenUsage.inputTokens + tokenUsage.outputTokens}</p>
+              </div>
             </div>
           )}
         </CardContent>

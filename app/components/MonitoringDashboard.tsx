@@ -32,7 +32,11 @@ export default function MonitoringDashboard() {
       if (response.ok) {
         const data = await response.json();
         setMetrics(data.metrics);
+        console.log('Metrics data:', data);
         console.log('Metrics source:', data.source, data.note);
+        console.log('Token count:', data.metrics.totalTokens);
+        console.log('Total cost:', data.metrics.totalCost);
+        console.log('Average latency:', data.metrics.averageLatency, 'ms');
       }
     } catch (error) {
       console.error('Failed to fetch metrics:', error);
@@ -134,9 +138,17 @@ export default function MonitoringDashboard() {
             <CardTitle className="text-sm font-medium">Avg Latency</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{Math.round(metrics.averageLatency)}ms</div>
+            <div className="text-2xl font-bold">
+              {metrics.averageLatency > 0 
+                ? `${Math.round(metrics.averageLatency)}ms` 
+                : '0ms'
+              }
+            </div>
             <p className="text-xs text-muted-foreground">
-              Response time
+              {metrics.averageLatency > 0 
+                ? `~${(metrics.averageLatency / 1000).toFixed(1)}s per call` 
+                : 'No data available'
+              }
             </p>
           </CardContent>
         </Card>
@@ -204,7 +216,12 @@ export default function MonitoringDashboard() {
               </div>
               <div className="flex justify-between items-center">
                 <span>Average Latency</span>
-                <Badge variant="outline">{Math.round(metrics.averageLatency)}ms</Badge>
+                <Badge variant="outline">
+                  {metrics.averageLatency > 0 
+                    ? `${Math.round(metrics.averageLatency)}ms` 
+                    : '0ms'
+                  }
+                </Badge>
               </div>
               <div className="flex justify-between items-center">
                 <span>Total Cost</span>

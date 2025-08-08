@@ -365,7 +365,7 @@ export default function Home() {
                       throw error;
                     }
                   }}
-                  onImageReplace={(imageIndex: string, newImage: any) => {
+                  onImageReplace={async (imageIndex: string, newImage: any) => {
                     setGeneratedBlog(prev => {
                       if (!prev) return null;
 
@@ -413,14 +413,58 @@ export default function Home() {
                       // Remove from removedIndices since we're adding an image back
                       setRemovedIndices(prev => prev.filter(idx => idx !== index.toString()));
 
-                      return {
+                      const updatedBlog = {
                         ...prev,
                         images: updatedImages,
                         content: updatedContent
                       };
+
+                      // Save the updated blog post to database
+                      (async () => {
+                        try {
+                          const {
+                            data: { session },
+                          } = await supabase.auth.getSession();
+
+                          const authHeaders: Record<string, string> = {
+                            "Content-Type": "application/json",
+                          };
+
+                          if (session?.access_token) {
+                            authHeaders["Authorization"] = `Bearer ${session.access_token}`;
+                          }
+
+                          if (updatedBlog?.metadata?.blogPostId) {
+                            // Update existing blog post
+                            const saveResponse = await fetch(`/api/blog-posts/${updatedBlog.metadata.blogPostId}`, {
+                              method: 'PUT',
+                              headers: authHeaders,
+                              body: JSON.stringify({
+                                content: updatedContent,
+                                title: updatedBlog.title,
+                                metadata: {
+                                  ...updatedBlog.metadata,
+                                  lastEdited: new Date().toISOString(),
+                                  editCount: (updatedBlog.metadata.editCount || 0) + 1
+                                }
+                              })
+                            });
+
+                            if (!saveResponse.ok) {
+                              console.warn('Failed to save image replacement to database');
+                            }
+                          } else {
+                            console.warn('Blog post not found in database: ', updatedBlog);
+                          }
+                        } catch (error) {
+                          console.error('Failed to save image replacement:', error);
+                        }
+                      })();
+
+                      return updatedBlog;
                     });
                   }}
-                  onImageRemove={(imageIndex: string) => {
+                  onImageRemove={async (imageIndex: string) => {
                     // Track the removed index
                     setRemovedIndices(prev => [...prev, imageIndex]);
                     
@@ -446,10 +490,54 @@ export default function Home() {
                         updatedContent = contentSections.join('\n');
                       }
                       
-                      return {
+                      const updatedBlog = {
                         ...prev,
                         content: updatedContent
                       };
+
+                      // Save the updated blog post to database
+                      (async () => {
+                        try {
+                          const {
+                            data: { session },
+                          } = await supabase.auth.getSession();
+
+                          const authHeaders: Record<string, string> = {
+                            "Content-Type": "application/json",
+                          };
+
+                          if (session?.access_token) {
+                            authHeaders["Authorization"] = `Bearer ${session.access_token}`;
+                          }
+
+                          if (updatedBlog?.metadata?.blogPostId) {
+                            // Update existing blog post
+                            const saveResponse = await fetch(`/api/blog-posts/${updatedBlog.metadata.blogPostId}`, {
+                              method: 'PUT',
+                              headers: authHeaders,
+                              body: JSON.stringify({
+                                content: updatedContent,
+                                title: updatedBlog.title,
+                                metadata: {
+                                  ...updatedBlog.metadata,
+                                  lastEdited: new Date().toISOString(),
+                                  editCount: (updatedBlog.metadata.editCount || 0) + 1
+                                }
+                              })
+                            });
+
+                            if (!saveResponse.ok) {
+                              console.warn('Failed to save image removal to database');
+                            }
+                          } else {
+                            console.warn('Blog post not found in database: ', updatedBlog);
+                          }
+                        } catch (error) {
+                          console.error('Failed to save image removal:', error);
+                        }
+                      })();
+
+                      return updatedBlog;
                     });
                   }}
                   onSearchImages={async (query: string) => {

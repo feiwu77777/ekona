@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { traceableGemini } from '@/app/lib/langchainClient';
+import { createLangChainGemini } from '@/app/lib/langchainClient';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,13 +12,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Test the LangSmith tracing
-    const result = await traceableGemini(prompt);
+    // Test the enhanced LangChain integration with token tracking
+    const geminiLLM = createLangChainGemini('gemini-2.0-flash-lite');
+    const response = await geminiLLM.invoke([{ role: 'user', content: prompt }]);
+    const result = response.content as string;
+    
+    // Get token usage from the callback handler
+    const tokenUsage = (geminiLLM as any).getTokenUsage();
 
     return NextResponse.json({
       result,
+      tokenUsage,
       timestamp: new Date().toISOString(),
-      message: 'LangSmith tracing test completed successfully'
+      message: 'Enhanced LangChain integration with token tracking completed successfully'
     });
 
   } catch (error) {

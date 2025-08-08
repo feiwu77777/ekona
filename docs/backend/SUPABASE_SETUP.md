@@ -39,19 +39,41 @@ You need to add both client-side and server-side API keys to your Next.js applic
     SUPABASE_SERVICE_ROLE_KEY=YOUR_SUPABASE_SERVICE_ROLE_KEY
     ```
 
-3.  **Security Notes**:
-    - **`NEXT_PUBLIC_*`** variables are safe to expose in the browser
-    - **`SUPABASE_SERVICE_ROLE_KEY`** must NOT have the `NEXT_PUBLIC_` prefix - this keeps it server-side only
-    - Never commit your `.env.local` file to version control
+## 4. LangSmith Setup (Optional but Recommended)
 
-4.  **Important**: Restart your Next.js development server after creating or modifying the `.env.local` file for the changes to take effect.
+For LLM monitoring and cost tracking, set up LangSmith:
 
-## 4. Enable Email Provider
+1.  Go to [smith.langchain.com](https://smith.langchain.com/) and create an account
+2.  Create a new project (e.g., `ekona-blog-generator`)
+3.  Get your API key from the project settings
+4.  Add these environment variables to your `.env.local`:
 
-Supabase's authentication is ready to use out-of-the-box with the "Email" provider. By default, new users will need to confirm their email address.
+    ```
+    # LangSmith Configuration
+    LANGSMITH_API_KEY=your_langsmith_api_key
+    LANGSMITH_PROJECT=ekona-blog-generator
+    LANGSMITH_TRACING=true
+    LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+    ```
 
-- You can manage this setting by going to **Authentication** -> **Providers** in your Supabase dashboard.
-- For development, you might want to temporarily disable the "Confirm email" setting under **Authentication** -> **Settings**.
+## 5. AI Provider Setup
+
+For the blog generation functionality, you'll need API keys for AI providers:
+
+```
+# Google Gemini API (for blog generation)
+GEMINI_API_KEY=your_gemini_api_key
+
+# News API (for research)
+NEWS_API_KEY=your_news_api_key
+
+# Google Custom Search API (for research)
+GOOGLE_CUSTOM_SEARCH_API_KEY=your_google_api_key
+GOOGLE_CUSTOM_SEARCH_ENGINE_ID=your_search_engine_id
+
+# Unsplash API (for images)
+UNSPLASH_ACCESS_KEY=your_unsplash_access_key
+```
 
 ## 5. Set Up User Profiles and Credits System
 
