@@ -235,6 +235,48 @@ ekona/
 └── public/                    # Static assets
 ```
 
+## 🛠️ AI Tools Used and Development Workflow
+
+### Development Process with Cursor
+
+The entire application was built using **Cursor (Claude Sonnet 4)** as the primary AI development assistant. Here's the detailed workflow:
+
+#### 1. Initial Planning Phase
+- **Use Case Analysis**: Provided Cursor with the project requirements and use case brief
+- **Roadmap Creation**: Cursor generated `@/docs/project_planning/planning.md` with multiple solution options for each feature
+- **Solution Refinement**: Selected preferred solutions and requested Cursor to create `@/docs/project_planning/planning_refined.md` with detailed implementation plans
+- **Progress Tracking**: Created `@/docs/project_planning/planning_progression.md` to monitor feature implementation status
+
+#### 2. Implementation Phase
+- **Full Product Generation**: Cursor followed the planning documents to create the entire application
+- **Code Review**: Manually reviewed generated code for bugs and improvements
+- **Iterative Refinement**: Used Cursor's assistance to fix issues and enhance features
+
+#### 3. Documentation
+- **Feature Documentation**: Comprehensive documentation for each feature in `@/docs/project_planning/features_description.md`
+- **Planning Files**: All planning documents are preserved in the `@/docs/project_planning/` directory for reference
+
+### Documentation Structure
+
+The `@/docs/` folder contains:
+
+```
+docs/
+├── project_planning/
+│   ├── planning.md              # Initial planning with multiple solution options
+│   ├── planning_refined.md      # Chosen solutions with implementation details
+│   ├── planning_progression.md  # Feature implementation tracking
+│   └── features_description.md  # Detailed feature documentation
+└── google_auth/
+    └── GOOGLE_SIGN_IN_SUPABASE.md  # Google authentication setup guide
+```
+
+### AI-Assisted Development Benefits
+- **Rapid Prototyping**: Complete application generated in significantly less time
+- **Consistent Architecture**: AI maintained architectural patterns throughout development
+- **Quality Assurance**: AI-generated code required minimal modifications
+- **Learning Acceleration**: Explored new technologies (LangChain, LangSmith) with AI guidance
+
 ## 🤝 Contributing
 
 1. Fork the repository
