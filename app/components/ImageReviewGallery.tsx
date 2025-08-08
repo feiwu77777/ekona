@@ -256,16 +256,15 @@ export default function ImageReviewGallery({
             <div className="flex items-center justify-between">
               <DialogTitle>Image Review & Management</DialogTitle>
               {pendingChanges.length > 0 && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mr-8">
                   <Badge variant="secondary" className="text-xs">
                     {getPendingChangesText()} pending
                   </Badge>
                   <Button
                     size="sm"
                     onClick={applyChanges}
-                    className="bg-green-600 hover:bg-green-700"
                   >
-                    Apply Changes
+                    Save Changes
                   </Button>
                   <Button
                     size="sm"
@@ -309,7 +308,7 @@ export default function ImageReviewGallery({
                     return (
                       <div
                         key={`section-${index + 1}`}
-                        className={`border rounded-lg p-3 ${
+                        className={`border rounded-lg p-3 h-[320px] flex flex-col ${
                           isRemoved ? "bg-red-50 border-red-200" : "bg-gray-50"
                         } ${
                           selectedImageId === image.id || selectedImageId === `index-${index}`
@@ -317,9 +316,9 @@ export default function ImageReviewGallery({
                             : "border"
                         }`}
                       >
-                        <div className="flex flex-col">
+                        <div className="flex flex-col h-full">
                           {isRemoved && !pendingIndexReplace ? (
-                            <div className="w-full h-40 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
+                            <div className="w-full h-40 bg-gray-200 rounded-lg flex items-center justify-center mb-3 flex-shrink-0">
                               <p className="text-gray-500 text-sm">
                                 {isPermanentlyRemoved
                                   ? "Image Removed"
@@ -330,19 +329,19 @@ export default function ImageReviewGallery({
                             <img
                               src={pendingIndexReplace?.newImage?.url || pendingReplace?.newImage?.url || image.url}
                               alt={pendingIndexReplace?.newImage?.alt || pendingReplace?.newImage?.alt || image.alt}
-                              className="w-full h-40 object-cover rounded-lg shadow-sm mb-3"
+                              className="w-full h-40 object-cover rounded-lg shadow-sm mb-3 flex-shrink-0"
                               onError={(e) => {
                                 e.currentTarget.style.display = "none";
                               }}
                             />
                           )}
-                          <div className="flex-1">
-                            <p className="font-medium text-sm mb-1 line-clamp-2">
+                          <div className="flex flex-col flex-1 min-h-0">
+                            <p className="font-medium text-sm mb-1 line-clamp-2 flex-shrink-0">
                               {isRemoved && !pendingIndexReplace
                                 ? "No Image"
                                 : pendingIndexReplace?.newImage?.alt || pendingReplace?.newImage?.alt || image.alt}
                             </p>
-                            <p className="text-xs text-gray-500 mb-1">
+                            <p className="text-xs text-gray-500 mb-1 flex-shrink-0">
                               {isRemoved && !pendingIndexReplace
                                 ? "Section placeholder"
                                 : `By ${
@@ -351,110 +350,112 @@ export default function ImageReviewGallery({
                                     image.photographer
                                   }`}
                             </p>
-                            <p className="text-xs text-gray-400 mb-3">
+                            <p className="text-xs text-gray-400 mb-3 flex-shrink-0">
                               Section {index + 1}
                             </p>
-                            {isRemoved && !pendingIndexReplace ? (
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    if (selectedImageId && selectedImageId.startsWith("available-")) {
-                                      // An available image is selected, add it to this empty slot
-                                      const availableImageId = selectedImageId.replace("available-", "");
-                                      const selectedImage = expandedAvailableImages.find(img => img.id === availableImageId);
-                                      
-                                      if (selectedImage) {
-                                        setPendingChanges((prev) => [
-                                          ...prev,
-                                          {
-                                            type: "replace",
-                                            imageId: `index-${index}`,
-                                            newImage: selectedImage,
-                                          },
-                                        ]);
-                                        setSelectedImageId(null);
-                                        scrollToTop();
-                                      }
-                                    } else {
-                                      // Normal flow - select this slot for image addition
-                                      handleImageSelection(`index-${index}`);
-                                      setSearchQuery(""); // Clear search query for user input
-                                      setSearchResults([]); // Clear previous results
-                                    }
-                                  }}
-                                  className={`flex-1 ${selectedImageId && selectedImageId.startsWith("available-") ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
-                                >
-                                  {selectedImageId && selectedImageId.startsWith("available-") ? "Select" : "Add Image"}
-                                </Button>
-                              </div>
-                            ) : pendingIndexReplace ? (
-                              <div className="flex flex-col gap-2">
-                                <Badge
-                                  variant="default"
-                                  className="w-full justify-center bg-green-600"
-                                >
-                                  Pending Replace
-                                </Badge>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    // Remove only this specific pending change
-                                    setPendingChanges(prev => 
-                                      prev.filter(change => change.imageId !== `index-${index}`)
-                                    );
-                                  }}
-                                  className="text-xs"
-                                >
-                                  Discard
-                                </Button>
-                              </div>
-                            ) : (
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    if (selectedImageId && selectedImageId.startsWith("available-")) {
-                                      // An available image is selected, replace this current image with it
-                                      const availableImageId = selectedImageId.replace("available-", "");
-                                      const selectedImage = expandedAvailableImages.find(img => img.id === availableImageId);
-                                      
-                                      if (selectedImage) {
-                                        setPendingChanges((prev) => [
-                                          ...prev,
-                                          {
-                                            type: "replace",
-                                            imageId: `index-${index}`,
-                                            newImage: selectedImage,
-                                          },
-                                        ]);
-                                        setSelectedImageId(null);
-                                        scrollToTop();
-                                      }
-                                    } else {
-                                      // Normal replace flow - select this image position for replacement
-                                      handleImageSelection(`index-${index}`);
-                                    }
-                                  }}
-                                  className="flex-1"
-                                >
-                                  {selectedImageId && selectedImageId.startsWith("available-") ? "Select" : "Replace"}
-                                </Button>
-                                {!selectedImageId && (
+                            <div className="mt-auto">
+                              {isRemoved && !pendingIndexReplace ? (
+                                <div className="flex gap-2">
                                   <Button
-                                    variant="destructive"
+                                    variant="outline"
                                     size="sm"
-                                    onClick={() => handleRemoveImage(index)}
+                                    onClick={() => {
+                                      if (selectedImageId && selectedImageId.startsWith("available-")) {
+                                        // An available image is selected, add it to this empty slot
+                                        const availableImageId = selectedImageId.replace("available-", "");
+                                        const selectedImage = expandedAvailableImages.find(img => img.id === availableImageId);
+                                        
+                                        if (selectedImage) {
+                                          setPendingChanges((prev) => [
+                                            ...prev,
+                                            {
+                                              type: "replace",
+                                              imageId: `index-${index}`,
+                                              newImage: selectedImage,
+                                            },
+                                          ]);
+                                          setSelectedImageId(null);
+                                          scrollToTop();
+                                        }
+                                      } else {
+                                        // Normal flow - select this slot for image addition
+                                        handleImageSelection(`index-${index}`);
+                                        setSearchQuery(""); // Clear search query for user input
+                                        setSearchResults([]); // Clear previous results
+                                      }
+                                    }}
+                                    className={`flex-1 ${selectedImageId && selectedImageId.startsWith("available-") ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
+                                  >
+                                    {selectedImageId && selectedImageId.startsWith("available-") ? "Select" : "Add Image"}
+                                  </Button>
+                                </div>
+                              ) : pendingIndexReplace ? (
+                                <div className="flex flex-col gap-2">
+                                  <Badge
+                                    variant="default"
+                                    className="w-full justify-center bg-green-600"
+                                  >
+                                    Pending Replace
+                                  </Badge>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      // Remove only this specific pending change
+                                      setPendingChanges(prev => 
+                                        prev.filter(change => change.imageId !== `index-${index}`)
+                                      );
+                                    }}
+                                    className="text-xs"
+                                  >
+                                    Discard
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      if (selectedImageId && selectedImageId.startsWith("available-")) {
+                                        // An available image is selected, replace this current image with it
+                                        const availableImageId = selectedImageId.replace("available-", "");
+                                        const selectedImage = expandedAvailableImages.find(img => img.id === availableImageId);
+                                        
+                                        if (selectedImage) {
+                                          setPendingChanges((prev) => [
+                                            ...prev,
+                                            {
+                                              type: "replace",
+                                              imageId: `index-${index}`,
+                                              newImage: selectedImage,
+                                            },
+                                          ]);
+                                          setSelectedImageId(null);
+                                          scrollToTop();
+                                        }
+                                      } else {
+                                        // Normal replace flow - select this image position for replacement
+                                        handleImageSelection(`index-${index}`);
+                                      }
+                                    }}
                                     className="flex-1"
                                   >
-                                    Remove
+                                    {selectedImageId && selectedImageId.startsWith("available-") ? "Select" : "Replace"}
                                   </Button>
-                                )}
-                              </div>
-                            )}
+                                  {!selectedImageId && (
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() => handleRemoveImage(index)}
+                                      className="flex-1"
+                                    >
+                                      Remove
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -482,44 +483,46 @@ export default function ImageReviewGallery({
                     return (
                       <div
                         key={`available-${image.id}-${index}`}
-                        className={`border rounded-lg p-3 bg-blue-50 ${
+                        className={`border rounded-lg p-3 bg-blue-50 h-[320px] flex flex-col ${
                           selectedImageId === `available-${image.id}`
                             ? "border-4 border-blue-500 shadow-lg"
                             : "border"
                         }`}
                       >
-                        <div className="flex flex-col">
+                        <div className="flex flex-col h-full">
                           <img
                             src={image.url}
                             alt={image.alt}
-                            className="w-full h-40 object-cover rounded-lg shadow-sm mb-3"
+                            className="w-full h-40 object-cover rounded-lg shadow-sm mb-3 flex-shrink-0"
                             onError={(e) => {
                               e.currentTarget.style.display = "none";
                             }}
                           />
-                          <div className="flex-1">
-                            <p className="font-medium text-sm mb-1 line-clamp-2">
+                          <div className="flex flex-col flex-1 min-h-0">
+                            <p className="font-medium text-sm mb-1 line-clamp-2 flex-shrink-0">
                               {image.alt}
                             </p>
-                            <p className="text-xs text-gray-500 mb-3">
+                            <p className="text-xs text-gray-500 mb-3 flex-shrink-0">
                               By {image.photographer}
                             </p>
 
-                            <Button
-                              size="sm"
-                              className={`w-full ${selectedImageId && !selectedImageId.startsWith("available-") ? "bg-green-600 hover:bg-green-700" : ""}`}
-                              onClick={() => {
-                                if (selectedImageId && !selectedImageId.startsWith("available-")) {
-                                  handleReplaceImage(image);
-                                } else {
-                                  // Start selection mode - highlight this image and scroll to top
-                                  setSelectedImageId(`available-${image.id}`);
-                                  scrollToTop();
-                                }
-                              }}
-                            >
-                              {selectedImageId && selectedImageId.startsWith("index-") ? "Select" : "Add to Blog"}
-                            </Button>
+                            <div className="mt-auto">
+                              <Button
+                                size="sm"
+                                className={`w-full ${selectedImageId && !selectedImageId.startsWith("available-") ? "bg-green-600 hover:bg-green-700" : ""}`}
+                                onClick={() => {
+                                  if (selectedImageId && !selectedImageId.startsWith("available-")) {
+                                    handleReplaceImage(image);
+                                  } else {
+                                    // Start selection mode - highlight this image and scroll to top
+                                    setSelectedImageId(`available-${image.id}`);
+                                    scrollToTop();
+                                  }
+                                }}
+                              >
+                                {selectedImageId && selectedImageId.startsWith("index-") ? "Select" : "Add to Blog"}
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>

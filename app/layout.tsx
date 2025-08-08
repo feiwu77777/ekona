@@ -7,15 +7,14 @@ import Footer from "./components/Footer";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Resume Tailor - AI-Powered Resume Customization",
-  description: "Tailor your resume for any job with AI. Upload your LaTeX resume and job description to get a perfectly customized resume.",
+  title: "Ekona - AI-Powered Blog Post Generator",
+  description: "Generate stunning blog posts with AI. Research topics, create content, and add images automatically with our advanced multi-agent system.",
   icons: {
     icon: [
       { url: "/favicon.png", sizes: "32x32", type: "image/png" },
-      { url: "/resume_tailor_logo.png", sizes: "192x192", type: "image/png" },
     ],
     shortcut: "/favicon.png",
-    apple: "/resume_tailor_logo.png",
+    apple: "/favicon.png",
   },
 };
 

@@ -43,7 +43,6 @@ export async function GET(request: NextRequest) {
       // Filter out runs before August 8th, 2025 at 3pm CET
       const runStartTime = new Date(run.start_time || 0);
       if (runStartTime < filterDate) {
-        console.log(`Skipping run ${run.id} - before filter date: ${runStartTime.toISOString()}`);
         continue; // Skip runs before the filter date
       }
       

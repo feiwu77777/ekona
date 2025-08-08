@@ -1,13 +1,15 @@
 # Ekona AI Blog Post Generator - Feature File Mapping
 
 ## Project Overview
-This document maps all files relevant to each feature in the ekona AI blog post generator project.
+This document maps all files relevant to each feature in the ekona AI blog post generator project. Each feature includes a brief explanation of its functionality.
 
 ---
 
 ## 1. AI Multi-Agent Workflow
 
 ### 1.1 Research Agent
+**What it does:** Automatically researches topics by fetching recent articles from News API and comprehensive search results from Google Custom Search API. Combines and filters results to provide relevant, up-to-date information for blog content.
+
 **Core Files:**
 - `app/lib/researchAgent.ts` - Main ResearchAgent class implementation
 - `app/api/research/route.ts` - Research API endpoint
@@ -24,6 +26,8 @@ This document maps all files relevant to each feature in the ekona AI blog post 
 - Google Custom Search API integration
 
 ### 1.2 Image Retrieval Agent
+**What it does:** Searches for relevant images using Unsplash API, scores them for relevance to the blog topic using AI, and automatically embeds them into the markdown content with proper attribution.
+
 **Core Files:**
 - `app/lib/imageRetrievalAgent.ts` - Main ImageRetrievalAgent class implementation
 - `app/api/images/route.ts` - Images API endpoint
@@ -40,6 +44,8 @@ This document maps all files relevant to each feature in the ekona AI blog post 
 - Image attribution and compliance handling
 
 ### 1.3 Content Generation Agent
+**What it does:** Uses Google Gemini API to generate structured blog content based on research data, user preferences (tone, word count), and topic. Creates well-formatted markdown with proper headings, sections, and conclusions.
+
 **Core Files:**
 - `app/lib/contentGenerationAgent.ts` - Main ContentGenerationAgent class implementation
 - `app/api/generate-blog/route.ts` - Blog generation API endpoint
@@ -55,6 +61,8 @@ This document maps all files relevant to each feature in the ekona AI blog post 
 - LangChain monitoring (future)
 
 ### 1.4 Reference Management Agent
+**What it does:** Processes research sources, extracts key information, formats references in proper citation style, and embeds them into the blog content for credibility and attribution.
+
 **Core Files:**
 - `app/lib/referenceManagementAgent.ts` - Main ReferenceManagementAgent class implementation
 - `app/api/references/route.ts` - References API endpoint
@@ -65,9 +73,12 @@ This document maps all files relevant to each feature in the ekona AI blog post 
 
 ---
 
+
 ## 2. Frontend Implementation
 
 ### 2.1 Topic Submission Interface
+**What it does:** Provides a step-by-step wizard interface for users to input their blog topic, select writing tone (academic, casual, professional), and specify word count preferences before generating content.
+
 **Core Files:**
 - `app/components/TopicWizard.tsx` - Main topic wizard component
 - `app/page.tsx` - Main page integration with blog generation workflow
@@ -84,6 +95,8 @@ This document maps all files relevant to each feature in the ekona AI blog post 
 - `tailwind.config.js` - Tailwind configuration
 
 ### 2.2 Real-time Markdown Preview
+**What it does:** Renders generated blog content in real-time with both preview and raw markdown views. Allows users to see how their content will look when published and provides copy/download functionality for the markdown.
+
 **Core Files:**
 - `app/components/MarkdownPreview.tsx` - Markdown rendering component
 - `app/components/BlogPreview.tsx` - Blog preview component
@@ -99,6 +112,8 @@ This document maps all files relevant to each feature in the ekona AI blog post 
 - `app/page.tsx` - Main page integration with BlogPreview component
 
 ### 2.3 Interactive Editing Interface
+**What it does:** Provides a chat-based interface for users to request edits to their generated blog content. Uses AI to understand edit requests and applies changes while maintaining a history of all edits made.
+
 **Core Files:**
 - `app/components/EditChatInterface.tsx` - Chat interface for editing
 - `app/components/EditHistory.tsx` - Edit history component
@@ -110,7 +125,9 @@ This document maps all files relevant to each feature in the ekona AI blog post 
 **Integration:**
 - `app/page.tsx` - Main page integration
 
-### 2.4 Image Review System (Stretch Goal)
+### 2.4 Image Review System
+**What it does:** Allows users to review, replace, and manage images in their blog posts. Provides a gallery interface to see all available images, search for new ones, and make changes before finalizing the blog post.
+
 **Core Files:**
 - `app/components/ImageReviewGallery.tsx` - Image review component
 - `app/hooks/useImageManagement.ts` - Image management hook
@@ -120,6 +137,8 @@ This document maps all files relevant to each feature in the ekona AI blog post 
 - `app/components/ui/badge.tsx` - Badge component
 
 ### 2.5 Blog Posts Management Interface
+**What it does:** Provides a complete interface for users to view, manage, and edit their saved blog posts. Shows a list of all generated posts with metadata and allows users to access individual posts for viewing or further editing.
+
 **Core Files:**
 - `app/blog-posts/page.tsx` - Blog posts list page
 - `app/blog-posts/[id]/page.tsx` - Individual blog post view page
@@ -140,6 +159,8 @@ This document maps all files relevant to each feature in the ekona AI blog post 
 ## 3. Backend Implementation
 
 ### 3.1 Agent Orchestration
+**What it does:** Coordinates all AI agents in a sequential workflow to generate complete blog posts. Manages the flow from research → content generation → image retrieval → reference management, ensuring each step completes before moving to the next.
+
 **Core Files:**
 - `app/lib/agentOrchestrator.ts` - Main orchestration class
 - `app/api/generate-blog/route.ts` - Main blog generation endpoint
@@ -152,6 +173,8 @@ This document maps all files relevant to each feature in the ekona AI blog post 
 - `app/lib/referenceManagementAgent.ts` - Reference management integration
 
 ### 3.2 API Design
+**What it does:** Provides a comprehensive REST API for all blog generation, management, and user functionality. Handles authentication, data persistence, and provides endpoints for frontend integration.
+
 **Core API Routes:**
 - `app/api/generate-blog/route.ts` - Main blog generation
 - `app/api/edit-blog/route.ts` - Blog editing
@@ -181,7 +204,9 @@ This document maps all files relevant to each feature in the ekona AI blog post 
 - `app/lib/errorUtils.ts` - Error handling utilities
 - `app/lib/cors.ts` - CORS handling utilities
 
-### 3.3 LLM Call Monitoring (Stretch Goal)
+### 3.3 LLM Call Monitoring
+**What it does:** Tracks and monitors all AI/LLM API calls for performance, cost, and usage analytics. Integrates with LangSmith to provide detailed insights into token usage, latency, and costs across all Gemini API calls.
+
 **Core Files:**
 - `app/lib/langchainClient.ts` - LangChain client setup with traceable Gemini
 - `app/lib/monitoring.ts` - Monitoring utilities and metrics tracking
@@ -207,6 +232,8 @@ This document maps all files relevant to each feature in the ekona AI blog post 
 ## 4. Database Schema Design
 
 ### 4.1 Blog Posts Storage
+**What it does:** Stores all generated blog posts with metadata including title, content, generation parameters, and user information. Provides persistent storage and retrieval for user's blog post history.
+
 **Database Files:**
 - `supabase_SQL/blog_posts_schema.sql` - Blog posts table schema
 - `supabase_SQL/database.types.ts` - TypeScript types
@@ -216,6 +243,8 @@ This document maps all files relevant to each feature in the ekona AI blog post 
 - `app/api/blog-posts/route.ts` - Blog posts API
 
 ### 4.2 References and Image Metadata
+**What it does:** Stores metadata for research references and images used in blog posts, including URLs, attribution information, and relevance scores. Enables tracking and management of sources and visual content.
+
 **Database Files:**
 - `supabase_SQL/references_and_images_schema.sql` - References and image metadata tables schema
 - `supabase_SQL/database.types.ts` - Updated TypeScript types for references and images
@@ -232,6 +261,8 @@ This document maps all files relevant to each feature in the ekona AI blog post 
 - `app/lib/imageRetrievalAgent.ts` - Image metadata storage
 
 ### 4.3 User Session State
+**What it does:** Manages user preferences, session data, activity tracking, and workspace state. Stores user-specific settings and provides personalized experience across sessions.
+
 **Database Files:**
 - `supabase_SQL/user_session_state_schema.sql` - Complete user session state schema
 - `supabase_SQL/database.types.ts` - Updated TypeScript types for user session state
@@ -255,6 +286,8 @@ This document maps all files relevant to each feature in the ekona AI blog post 
 ## 5. Integration & Setup
 
 ### 5.1 Environment Setup
+**What it does:** Manages all configuration and environment variables needed for the application to run, including API keys, database connections, and deployment settings.
+
 **Configuration Files:**
 - `.env.local` - Environment variables
 - `.env.example` - Environment template
@@ -265,6 +298,8 @@ This document maps all files relevant to each feature in the ekona AI blog post 
 - `docs/backend/API_KEYS_SETUP.md` - API keys setup guide
 
 ### 5.2 Authentication Integration
+**What it does:** Handles user authentication using Supabase Auth with email OTP. Manages user sessions, provides secure access to user-specific features, and integrates with the database for user data persistence.
+
 **Core Files:**
 - `app/lib/supabaseClient.ts` - Supabase client
 - `app/components/SignInModal.tsx` - Sign-in modal (email OTP only)
@@ -281,6 +316,8 @@ This document maps all files relevant to each feature in the ekona AI blog post 
 - Removed pricing section from navigation
 
 ### 5.3 UI Component Integration
+**What it does:** Provides a consistent design system using Shadcn UI components with Tailwind CSS. Ensures uniform styling, accessibility, and user experience across all application interfaces.
+
 **Core Components:**
 - `app/components/ui/` - All UI components
 - `components.json` - Component configuration
